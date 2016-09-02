@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"poule/commands"
+	"poule/operations/catalog"
 
 	"github.com/codegangsta/cli"
 )
@@ -16,11 +16,8 @@ func main() {
 	app.Usage = "Mass interact with GitHub issues & pull requests"
 	app.Version = "0.2.0"
 
-	app.Commands = []cli.Command{
-		commands.AuditCommand,
-		commands.CleanCommand,
-		commands.RebuildCommand,
-		commands.VersionCommand,
+	for _, descriptor := range catalog.Index {
+		app.Commands = append(app.Commands, descriptor.Command())
 	}
 
 	app.Flags = []cli.Flag{

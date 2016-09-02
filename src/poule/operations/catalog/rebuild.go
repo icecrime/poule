@@ -1,4 +1,4 @@
-package commands
+package catalog
 
 import (
 	"bytes"
@@ -16,29 +16,37 @@ import (
 	"github.com/google/go-github/github"
 )
 
-var RebuildCommand = cli.Command{
-	Name:   "rebuild",
-	Usage:  "Rebuild failed jobs",
-	Action: doRebuildCommand,
+func init() {
+	registerOperation(&prRebuildDescriptor{})
 }
 
-type PullRequest struct {
-	Number  int    `json:"number"`
-	Repo    string `json:"repo"`
-	Context string `json:"context"`
+type prRebuildDescriptor struct{}
+
+func (d *prRebuildDescriptor) Name() string {
+	return "rebuild"
 }
 
-func doRebuildCommand(c *cli.Context) {
-	operations.RunPullRequestOperation(c, &rebuildOperation{
-		args: c.Args(),
-	})
+func (d *prRebuildDescriptor) Command() cli.Command {
+	return cli.Command{
+		Name:  d.Name(),
+		Usage: "Rebuild failed pull requests",
+		Action: func(c *cli.Context) {
+			operations.RunPullRequestOperation(c, &prRebuild{
+				args: c.Args(),
+			})
+		},
+	}
 }
 
-type rebuildOperation struct {
+func (d *prRebuildDescriptor) Operation() Operation {
+	return &ciFailureLabelAudit{}
+}
+
+type prRebuild struct {
 	args cli.Args
 }
 
-func (o *rebuildOperation) Apply(c *operations.Context, pr *github.PullRequest, userData interface{}) error {
+func (o *prRebuild) Apply(c *operations.Context, pr *github.PullRequest, userData interface{}) error {
 	for _, context := range userData.([]string) {
 		if err := rebuildPR(pr, context); err != nil {
 			return fmt.Errorf("error rebuilding pull request %d: %v", *pr.Number, err)
@@ -47,7 +55,7 @@ func (o *rebuildOperation) Apply(c *operations.Context, pr *github.PullRequest, 
 	return nil
 }
 
-func (o *rebuildOperation) Describe(c *operations.Context, pr *github.PullRequest, userData interface{}) string {
+func (o *prRebuild) Describe(c *operations.Context, pr *github.PullRequest, userData interface{}) string {
 	contexts := userData.([]string)
 	if len(contexts) == 0 {
 		return ""
@@ -55,7 +63,7 @@ func (o *rebuildOperation) Describe(c *operations.Context, pr *github.PullReques
 	return fmt.Sprintf("Rebuilding pull request #%d for %s", *pr.Number, strings.Join(contexts, ", "))
 }
 
-func (o *rebuildOperation) Filter(c *operations.Context, pr *github.PullRequest) (bool, interface{}) {
+func (o *prRebuild) Filter(c *operations.Context, pr *github.PullRequest) (bool, interface{}) {
 	// Fetch the issue information for that pull request: that's the only way
 	// to retrieve the labels.
 	issue, _, err := c.Client.Issues.Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
@@ -85,7 +93,7 @@ func (o *rebuildOperation) Filter(c *operations.Context, pr *github.PullRequest)
 	return true, contexts
 }
 
-func (o *rebuildOperation) ListOptions(c *operations.Context) *github.PullRequestListOptions {
+func (o *prRebuild) ListOptions(c *operations.Context) *github.PullRequestListOptions {
 	return &github.PullRequestListOptions{
 		State: "open",
 		Base:  "master",

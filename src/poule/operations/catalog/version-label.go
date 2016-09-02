@@ -1,4 +1,4 @@
-package commands
+package catalog
 
 import (
 	"fmt"
@@ -11,32 +11,46 @@ import (
 	"github.com/google/go-github/github"
 )
 
-var VersionCommand = cli.Command{
-	Name:   "version_label",
-	Usage:  "Label issues with the version it applies to",
-	Action: doVersionCommand,
+func init() {
+	registerOperation(&versionLabelDescriptor{})
 }
 
-func doVersionCommand(c *cli.Context) {
-	operations.RunIssueOperation(c, &versionOperation{})
+type versionLabelDescriptor struct{}
+
+func (d *versionLabelDescriptor) Name() string {
+	return "version-label"
 }
 
-type versionOperation struct{}
+func (d *versionLabelDescriptor) Command() cli.Command {
+	return cli.Command{
+		Name:  d.Name(),
+		Usage: "Apply version labels to issues",
+		Action: func(c *cli.Context) {
+			operations.RunIssueOperation(c, &versionLabel{})
+		},
+	}
+}
 
-func (o *versionOperation) Apply(c *operations.Context, issue *github.Issue, userData interface{}) error {
+func (d *versionLabelDescriptor) Operation() Operation {
+	return &versionLabel{}
+}
+
+type versionLabel struct{}
+
+func (o *versionLabel) Apply(c *operations.Context, issue *github.Issue, userData interface{}) error {
 	_, _, err := c.Client.Issues.AddLabelsToIssue(c.Username, c.Repository, *issue.Number, []string{userData.(string)})
 	return err
 }
 
-func (o *versionOperation) Describe(c *operations.Context, issue *github.Issue, userData interface{}) string {
+func (o *versionLabel) Describe(c *operations.Context, issue *github.Issue, userData interface{}) string {
 	return fmt.Sprintf("Adding label %q to issue #%d", userData.(string), *issue.Number)
 }
 
-func (o *versionOperation) Filter(c *operations.Context, issue *github.Issue) (bool, interface{}) {
+func (o *versionLabel) Filter(c *operations.Context, issue *github.Issue) (bool, interface{}) {
 	return extractVersionLabels(issue)
 }
 
-func (o *versionOperation) ListOptions(c *operations.Context) *github.IssueListByRepoOptions {
+func (o *versionLabel) ListOptions(c *operations.Context) *github.IssueListByRepoOptions {
 	return &github.IssueListByRepoOptions{
 		State: "open",
 		ListOptions: github.ListOptions{

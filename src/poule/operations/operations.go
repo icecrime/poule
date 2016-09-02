@@ -39,6 +39,24 @@ type IssueOperation interface {
 	ListOptions(*Context) *github.IssueListByRepoOptions
 }
 
+type PullRequestOperation interface {
+	// Apply applies the operation to the GitHub pull request.
+	Apply(*Context, *github.PullRequest, interface{}) error
+
+	// Describe returns a human-readable description of calling Apply on the
+	// specified pull request with the specified context.
+	Describe(*Context, *github.PullRequest, interface{}) string
+
+	// Filter returns whether that operation should apply to the specified
+	// pull request, and an operation specific user data that is guaranteed to
+	// be passed on Apply and Describe invocation.
+	Filter(*Context, *github.PullRequest) (bool, interface{})
+
+	// ListOptions returns the global filtering options to apply when listing
+	// pull requests for the specified context.
+	ListOptions(*Context) *github.PullRequestListOptions
+}
+
 func RunIssueOperation(c *cli.Context, op IssueOperation) {
 	context := Context{}
 	context.Client = utils.MakeGitHubClient(c)
@@ -78,24 +96,6 @@ func RunIssueOperation(c *cli.Context, op IssueOperation) {
 			time.Sleep(delay)
 		}
 	}
-}
-
-type PullRequestOperation interface {
-	// Apply applies the operation to the GitHub pull request.
-	Apply(*Context, *github.PullRequest, interface{}) error
-
-	// Describe returns a human-readable description of calling Apply on the
-	// specified pull request with the specified context.
-	Describe(*Context, *github.PullRequest, interface{}) string
-
-	// Filter returns whether that operation should apply to the specified
-	// pull request, and an operation specific user data that is guaranteed to
-	// be passed on Apply and Describe invocation.
-	Filter(*Context, *github.PullRequest) (bool, interface{})
-
-	// ListOptions returns the global filtering options to apply when listing
-	// pull requests for the specified context.
-	ListOptions(*Context) *github.PullRequestListOptions
 }
 
 func RunPullRequestOperation(c *cli.Context, op PullRequestOperation) {

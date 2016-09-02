@@ -1,4 +1,4 @@
-package commands
+package catalog
 
 import (
 	"fmt"
@@ -11,19 +11,33 @@ import (
 	"github.com/google/go-github/github"
 )
 
-var CleanCommand = cli.Command{
-	Name:   "clean",
-	Usage:  "Clean GitHub failure labels",
-	Action: doCleanCommand,
+func init() {
+	registerOperation(&ciFailureLabelCleanDescriptor{})
 }
 
-func doCleanCommand(c *cli.Context) {
-	operations.RunPullRequestOperation(c, &cleanOperation{})
+type ciFailureLabelCleanDescriptor struct{}
+
+func (d *ciFailureLabelCleanDescriptor) Name() string {
+	return "ci-label-clean"
 }
 
-type cleanOperation struct{}
+func (d *ciFailureLabelCleanDescriptor) Command() cli.Command {
+	return cli.Command{
+		Name:  d.Name(),
+		Usage: "Clean CI failure labels",
+		Action: func(c *cli.Context) {
+			operations.RunPullRequestOperation(c, &ciFailureLabelClean{})
+		},
+	}
+}
 
-func (o *cleanOperation) Apply(c *operations.Context, pr *github.PullRequest, userData interface{}) error {
+func (d *ciFailureLabelCleanDescriptor) Operation() Operation {
+	return &ciFailureLabelAudit{}
+}
+
+type ciFailureLabelClean struct{}
+
+func (o *ciFailureLabelClean) Apply(c *operations.Context, pr *github.PullRequest, userData interface{}) error {
 	var err error
 	if hasFailures := userData.(bool); hasFailures {
 		_, err = c.Client.Issues.RemoveLabelForIssue(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number, utils.FailingCILabel)
@@ -31,14 +45,14 @@ func (o *cleanOperation) Apply(c *operations.Context, pr *github.PullRequest, us
 	return err
 }
 
-func (o *cleanOperation) Describe(c *operations.Context, pr *github.PullRequest, userData interface{}) string {
+func (o *ciFailureLabelClean) Describe(c *operations.Context, pr *github.PullRequest, userData interface{}) string {
 	if hasFailures := userData.(bool); hasFailures {
 		return fmt.Sprintf("Removing label %q from pull request #%d", utils.FailingCILabel, *pr.Number)
 	}
 	return ""
 }
 
-func (o *cleanOperation) Filter(c *operations.Context, pr *github.PullRequest) (bool, interface{}) {
+func (o *ciFailureLabelClean) Filter(c *operations.Context, pr *github.PullRequest) (bool, interface{}) {
 	// Fetch the issue information for that pull request: that's the only way
 	// to retrieve the labels.
 	issue, _, err := c.Client.Issues.Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
@@ -63,7 +77,7 @@ func (o *cleanOperation) Filter(c *operations.Context, pr *github.PullRequest) (
 	return true, utils.HasFailures(latestStatuses)
 }
 
-func (o *cleanOperation) ListOptions(c *operations.Context) *github.PullRequestListOptions {
+func (o *ciFailureLabelClean) ListOptions(c *operations.Context) *github.PullRequestListOptions {
 	return &github.PullRequestListOptions{
 		State: "open",
 		Base:  "master",
