@@ -2,7 +2,10 @@ package utils
 
 import (
 	"io/ioutil"
-	"time"
+	"log"
+	"strings"
+
+	"golang.org/x/oauth2"
 
 	"github.com/codegangsta/cli"
 	"github.com/google/go-github/github"
@@ -27,20 +30,39 @@ func GetGitHubToken(c *cli.Context) string {
 	return ""
 }
 
-type RepoStatus struct {
-	CreatedAt time.Time
-	State     string
-}
-
-func GetLatestStatuses(statuses []github.RepoStatus) map[string]RepoStatus {
-	latestStatuses := map[string]RepoStatus{}
-	for _, repoStatus := range statuses {
-		if repoStatus.CreatedAt.Unix() > latestStatuses[*repoStatus.Context].CreatedAt.Unix() {
-			latestStatuses[*repoStatus.Context] = RepoStatus{
-				CreatedAt: *repoStatus.CreatedAt,
-				State:     *repoStatus.State,
-			}
+func HasFailingCILabel(labels []github.Label) bool {
+	for _, l := range labels {
+		if *l.Name == FailingCILabel {
+			return true
 		}
 	}
-	return latestStatuses
+	return false
+}
+
+func HasFailures(statuses map[string]RepoStatus) bool {
+	for _, s := range statuses {
+		if s.State != "success" && s.State != "pending" {
+			return true
+		}
+	}
+	return false
+}
+
+func IsDryRun(c *cli.Context) bool {
+	return c.GlobalBool("dry-run")
+}
+
+func GetRepository(c *cli.Context) (string, string) {
+	repository := c.GlobalString("repository")
+	s := strings.SplitN(repository, "/", 2)
+	if len(s) != 2 {
+		log.Fatalf("Invalid repository specification %q", repository)
+	}
+	return s[0], s[1]
+}
+
+func MakeGitHubClient(c *cli.Context) *github.Client {
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: GetGitHubToken(c)})
+	tc := oauth2.NewClient(oauth2.NoContext, ts)
+	return github.NewClient(tc)
 }

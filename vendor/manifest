@@ -4,7 +4,7 @@
 		{
 			"importpath": "github.com/codegangsta/cli",
 			"repository": "https://github.com/codegangsta/cli",
-			"revision": "71f57d300dd6a780ac1856c005c4b518cfd498ec",
+			"revision": "33bb4c121333cd8eb7d8cc8d74474f4ec156f371",
 			"branch": "master"
 		},
 		{

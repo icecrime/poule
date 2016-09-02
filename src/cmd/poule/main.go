@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"cmd/poule/commands"
 
@@ -12,16 +13,26 @@ import (
 func main() {
 	app := cli.NewApp()
 	app.Name = "poule"
-	app.Usage = "Mass interact with GitHub pull requests"
-	app.Version = "0.1.0"
+	app.Usage = "Mass interact with GitHub issues & pull requests"
+	app.Version = "0.2.0"
 
 	app.Commands = []cli.Command{
 		commands.AuditCommand,
 		commands.CleanCommand,
 		commands.RebuildCommand,
+		commands.VersionCommand,
 	}
 
 	app.Flags = []cli.Flag{
+		cli.DurationFlag{
+			Name:  "delay",
+			Usage: "Delay between GitHub operations",
+			Value: 10 * time.Second,
+		},
+		cli.BoolFlag{
+			Name:  "dry-run",
+			Usage: "Simulate operations",
+		},
 		cli.StringFlag{
 			Name:  "repository",
 			Usage: "GitHub repository",
