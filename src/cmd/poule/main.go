@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"cmd/poule/commands"
+	"poule/commands"
 
 	"github.com/codegangsta/cli"
 )

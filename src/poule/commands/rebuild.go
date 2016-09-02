@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
-	"cmd/poule/operations"
-	"cmd/poule/utils"
+	"poule/operations"
+	"poule/utils"
 
 	"github.com/codegangsta/cli"
 	"github.com/google/go-github/github"

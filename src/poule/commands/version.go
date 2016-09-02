@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"cmd/poule/operations"
+	"poule/operations"
 
 	"github.com/codegangsta/cli"
 	"github.com/google/go-github/github"
