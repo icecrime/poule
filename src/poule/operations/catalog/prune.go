@@ -3,8 +3,8 @@ package catalog
 import (
 	"fmt"
 	"log"
+	"os"
 	"poule/operations"
-	"strconv"
 	"strings"
 	"time"
 
@@ -19,12 +19,9 @@ func init() {
 }
 
 func doRunPrune(c *cli.Context) {
-	action := c.String("action")
-	switch action {
-	case "close", "ping", "warn":
-		break
-	default:
-		log.Fatalf("Invalid action %q", action)
+	action, err := parseAction(c.String("action"))
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	filters, err := parseFilters(c.StringSlice("filter"))
@@ -66,12 +63,12 @@ func (d *pruneDescriptor) Command() cli.Command {
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "action",
-				Usage: "action to take for outdated issues (\"ping\", \"warn\", or \"close\")",
+				Usage: "action to take for outdated issues (\"ping\", \"warn\", \"close\", or \"force-close\")",
 				Value: "ping",
 			},
 			cli.StringSliceFlag{
 				Name:  "filter",
-				Usage: "filter issue attributes (\"label=value\", or \"assigned=bool\"))",
+				Usage: "filter based on issue attributes",
 			},
 			cli.StringFlag{
 				Name:  "grace-period",
@@ -93,41 +90,55 @@ func (d *pruneDescriptor) Operation() Operation {
 
 type prune struct {
 	action            string
-	filters           issueFilters
+	filters           []utils.IssueFilter
 	gracePeriod       extDuration
 	outdatedThreshold extDuration
 }
 
+var i int
+
 func (o *prune) Apply(c *operations.Context, issue *github.Issue, userData interface{}) error {
+	switch o.action {
+	case "close":
+		// TODO Find the last ping/warn message, and take the grace period into account.
+		break
+	case "force-close":
+		state := "closed"
+		_, _, err := c.Client.Issues.Edit(c.Username, c.Repository, *issue.Number, &github.IssueRequest{
+			State: &state,
+		})
+		return err
+	case "ping":
+		body := formatPingComment(issue, o)
+		_, _, err := c.Client.Issues.CreateComment(c.Username, c.Repository, *issue.Number, &github.IssueComment{
+			Body: &body,
+		})
+		return err
+	case "warn":
+		body := formatWarnComment(issue, o)
+		_, _, err := c.Client.Issues.CreateComment(c.Username, c.Repository, *issue.Number, &github.IssueComment{
+			Body: &body,
+		})
+		return err
+	}
 	return nil
 }
 
 func (o *prune) Describe(c *operations.Context, issue *github.Issue, userData interface{}) string {
-	labels := []string{}
-	for _, label := range issue.Labels {
-		labels = append(labels, *label.Name)
+	i++
+	if i > 30 {
+		os.Exit(0)
 	}
-	s := fmt.Sprintf("Issue #%d is outdated\n  Last:   %v\n  Title:  %s\n  Labels: %s\n\n", *issue.Number, userData.(time.Time), *issue.Title, strings.Join(labels, ", "))
-	switch o.action {
-	case "close":
-		break
-	case "ping":
-		//fmt.Printf("\n%s\n\n", formatPingComment(issue, o))
-		break
-	case "warn":
-		//fmt.Printf("\n%s\n\n", formatWarnComment(issue, o))
-		break
-	}
-	return s
+	return fmt.Sprintf("Execute %s action on issue #%d (last commented on %s)",
+		o.action, *issue.Number, userData.(time.Time).Format(time.RFC3339))
 }
 
 func (o *prune) Filter(c *operations.Context, issue *github.Issue) (bool, interface{}) {
 	// Apply filters, if any.
-	if o.filters.assigned != nil && (*o.filters.assigned != (issue.Assignee != nil)) {
-		return false, nil
-	}
-	if !hasAllLabels(o.filters.labels, issue.Labels) || hasAnyLabels(o.filters.not_labels, issue.Labels) {
-		return false, nil
+	for _, filter := range o.filters {
+		if !filter.Apply(issue) {
+			return false, nil
+		}
 	}
 
 	// Retrieve comments for that issue since our threshold plus our grace
@@ -172,14 +183,21 @@ func (o *prune) ListOptions(c *operations.Context) *github.IssueListByRepoOption
 }
 
 func formatPingComment(issue *github.Issue, o *prune) string {
-	comment := `<!-- %s -->
-@%s Hi! We see that this issue has not received any activity in over %s.
+	comment := `<!-- %s:%s:%d%c -->
+@%s It has been detected that this issue has not received any activity in over %s. Can you please let us know if it is still relevant:
 
-Could you please let us know if it is still relevant? For example:
 - For a bug: do you still experience the issue with the latest version?
 - For a feature request: was your request appropriately answered in a later version?
-`
-	return fmt.Sprintf(comment, utils.PouleToken, *issue.User.Login, o.outdatedThreshold.String())
+
+Thank you!`
+	return fmt.Sprintf(comment,
+		utils.PouleToken,
+		o.action,
+		o.outdatedThreshold.quantity,
+		o.outdatedThreshold.unit,
+		*issue.User.Login,
+		o.outdatedThreshold.String(),
+	)
 }
 
 func formatWarnComment(issue *github.Issue, o *prune) string {
@@ -188,33 +206,6 @@ Thank you very much for your help! The issue will be **automatically closed in %
 `
 	base := formatPingComment(issue, o)
 	return fmt.Sprintf(comment, base, o.gracePeriod.String())
-}
-
-func hasLabel(s string, issueLabels []github.Label) bool {
-	for _, label := range issueLabels {
-		if s == *label.Name {
-			return true
-		}
-	}
-	return false
-}
-
-func hasAnyLabels(s []string, issueLabels []github.Label) bool {
-	for _, l := range s {
-		if hasLabel(l, issueLabels) {
-			return true
-		}
-	}
-	return false
-}
-
-func hasAllLabels(s []string, issueLabels []github.Label) bool {
-	for _, l := range s {
-		if !hasLabel(l, issueLabels) {
-			return false
-		}
-	}
-	return true
 }
 
 type extDuration struct {
@@ -271,36 +262,26 @@ func (e extDuration) String() string {
 	}
 }
 
-type issueFilters struct {
-	assigned   *bool
-	labels     []string
-	not_labels []string
+func parseAction(action string) (string, error) {
+	switch action {
+	case "close", "force-close", "ping", "warn":
+		break
+	default:
+		return "", fmt.Errorf("Invalid action %q", action)
+	}
+	return action, nil
 }
 
-func parseFilters(filters []string) (issueFilters, error) {
-	result := issueFilters{}
+func parseFilters(filters []string) ([]utils.IssueFilter, error) {
+	issueFilters := []utils.IssueFilter{}
 	for _, filter := range filters {
-		s := strings.SplitN(filter, "=", 2)
-		if len(s) != 2 {
-			return issueFilters{}, fmt.Errorf("Invalid filter %q", s)
+		f, err := utils.MakeIssueFilter(filter)
+		if err != nil {
+			return []utils.IssueFilter{}, err
 		}
-
-		switch s[0] {
-		case "assigned":
-			b, err := strconv.ParseBool(s[1])
-			if err != nil {
-				return issueFilters{}, fmt.Errorf("Invalid value %q for assigned", s[1])
-			}
-			result.assigned = &b
-		case "label":
-			result.labels = append(result.labels, s[1])
-		case "~label":
-			result.not_labels = append(result.not_labels, s[1])
-		default:
-			return issueFilters{}, fmt.Errorf("Unknown filter type %q", s[0])
-		}
+		issueFilters = append(issueFilters, f)
 	}
-	return result, nil
+	return issueFilters, nil
 }
 
 func pluralize(count int64, value string) string {

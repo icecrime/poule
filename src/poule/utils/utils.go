@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"strings"
@@ -51,6 +52,14 @@ func HasFailures(statuses map[string]RepoStatus) bool {
 
 func IsDryRun(c *cli.Context) bool {
 	return c.GlobalBool("dry-run")
+}
+
+func PrintIssue(issue *github.Issue) {
+	labels := []string{}
+	for _, label := range issue.Labels {
+		labels = append(labels, *label.Name)
+	}
+	fmt.Printf("Issue #%d\n  Title:  %s\n  Labels: %s\n\n", *issue.Number, *issue.Title, strings.Join(labels, ", "))
 }
 
 func GetRepository(c *cli.Context) (string, string) {
