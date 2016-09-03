@@ -26,7 +26,7 @@ func main() {
 			Usage: "Delay between GitHub operations",
 			Value: 10 * time.Second,
 		},
-		cli.BoolFlag{
+		cli.BoolTFlag{
 			Name:  "dry-run",
 			Usage: "Simulate operations",
 		},
