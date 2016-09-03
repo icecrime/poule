@@ -24,7 +24,7 @@ func (d *ciFailureLabelCleanDescriptor) Name() string {
 func (d *ciFailureLabelCleanDescriptor) Command() cli.Command {
 	return cli.Command{
 		Name:  d.Name(),
-		Usage: "Clean CI failure labels",
+		Usage: "clean CI failure labels",
 		Action: func(c *cli.Context) {
 			operations.RunPullRequestOperation(c, &ciFailureLabelClean{})
 		},

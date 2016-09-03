@@ -14,6 +14,7 @@ import (
 const (
 	BaseUrl        = "https://leeroy.dockerproject.org/build/retry"
 	FailingCILabel = "status/failing-ci"
+	PouleToken     = "AUTOMATED:POULE"
 )
 
 func GetGitHubToken(c *cli.Context) string {

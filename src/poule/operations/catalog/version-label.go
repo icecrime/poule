@@ -24,7 +24,7 @@ func (d *versionLabelDescriptor) Name() string {
 func (d *versionLabelDescriptor) Command() cli.Command {
 	return cli.Command{
 		Name:  d.Name(),
-		Usage: "Apply version labels to issues",
+		Usage: "apply version labels to issues",
 		Action: func(c *cli.Context) {
 			operations.RunIssueOperation(c, &versionLabel{})
 		},

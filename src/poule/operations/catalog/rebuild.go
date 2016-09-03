@@ -29,7 +29,7 @@ func (d *prRebuildDescriptor) Name() string {
 func (d *prRebuildDescriptor) Command() cli.Command {
 	return cli.Command{
 		Name:  d.Name(),
-		Usage: "Rebuild failed pull requests",
+		Usage: "rebuild failed pull requests",
 		Action: func(c *cli.Context) {
 			operations.RunPullRequestOperation(c, &prRebuild{
 				args: c.Args(),

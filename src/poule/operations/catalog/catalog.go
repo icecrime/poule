@@ -1,6 +1,10 @@
 package catalog
 
-import "github.com/codegangsta/cli"
+import (
+	"sort"
+
+	"github.com/codegangsta/cli"
+)
 
 // Operation is an empty interface to encompass both issue and pull request
 // operations in a single descriptor type.
@@ -18,9 +22,24 @@ type OperationDescriptor interface {
 	Operation() Operation
 }
 
+type OperationDescriptors []OperationDescriptor
+
+func (d OperationDescriptors) Len() int {
+	return len(d)
+}
+
+func (d OperationDescriptors) Less(i, j int) bool {
+	return d[i].Name() < d[j].Name()
+}
+
+func (d OperationDescriptors) Swap(i, j int) {
+	d[i], d[j] = d[j], d[i]
+}
+
 // Index is the catalog of all known operations by name.
-var Index = map[string]OperationDescriptor{}
+var Index OperationDescriptors
 
 func registerOperation(descriptor OperationDescriptor) {
-	Index[descriptor.Name()] = descriptor
+	Index = append(Index, descriptor)
+	sort.Sort(Index)
 }

@@ -24,7 +24,7 @@ func (d *ciFailureLabelAuditDescriptor) Name() string {
 func (d *ciFailureLabelAuditDescriptor) Command() cli.Command {
 	return cli.Command{
 		Name:  d.Name(),
-		Usage: "Audit CI failure labels",
+		Usage: "audit CI failure labels",
 		Action: func(c *cli.Context) {
 			operations.RunPullRequestOperation(c, &ciFailureLabelAudit{})
 		},
