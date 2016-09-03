@@ -133,11 +133,11 @@ func (o *prune) Describe(c *operations.Context, issue *github.Issue, userData in
 		o.action, *issue.Number, userData.(time.Time).Format(time.RFC3339))
 }
 
-func (o *prune) Filter(c *operations.Context, issue *github.Issue) (bool, interface{}) {
+func (o *prune) Filter(c *operations.Context, issue *github.Issue) (operations.FilterResult, interface{}) {
 	// Apply filters, if any.
 	for _, filter := range o.filters {
 		if !filter.Apply(issue) {
-			return false, nil
+			return operations.Reject, nil
 		}
 	}
 
@@ -166,9 +166,13 @@ func (o *prune) Filter(c *operations.Context, issue *github.Issue) (bool, interf
 		break
 	}
 
-	// Filter out issues which last commented date is under our threshold.
-	outdated := lastCommented.Add(o.outdatedThreshold.Duration()).Before(time.Now())
-	return outdated, lastCommented
+	// Filter out issues which last commented date is under our threshold. We
+	// retrieve the issues in ascending update order: no more issues will be
+	// accepted after that.
+	if !lastCommented.Add(o.outdatedThreshold.Duration()).Before(time.Now()) {
+		return operations.Terminal, nil
+	}
+	return operations.Accept, lastCommented
 }
 
 func (o *prune) ListOptions(c *operations.Context) *github.IssueListByRepoOptions {

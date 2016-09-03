@@ -61,10 +61,10 @@ func (o *ciFailureLabelAudit) Describe(c *operations.Context, pr *github.PullReq
 	return ""
 }
 
-func (o *ciFailureLabelAudit) Filter(c *operations.Context, pr *github.PullRequest) (bool, interface{}) {
+func (o *ciFailureLabelAudit) Filter(c *operations.Context, pr *github.PullRequest) (operations.FilterResult, interface{}) {
 	// Exclude all pull requests which cannot be merged (e.g., rebase needed).
 	if pr.Mergeable != nil && !*pr.Mergeable {
-		return false, nil
+		return operations.Reject, nil
 	}
 
 	// Fetch the issue information for that pull request: that's the only way
@@ -87,7 +87,7 @@ func (o *ciFailureLabelAudit) Filter(c *operations.Context, pr *github.PullReque
 		hasFailures:       utils.HasFailures(latestStatuses),
 		hasFailingCILabel: utils.HasFailingCILabel(issue.Labels),
 	}
-	return true, userData
+	return operations.Accept, userData
 }
 
 func (o *ciFailureLabelAudit) ListOptions(c *operations.Context) *github.PullRequestListOptions {

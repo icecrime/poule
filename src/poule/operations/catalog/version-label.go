@@ -46,8 +46,11 @@ func (o *versionLabel) Describe(c *operations.Context, issue *github.Issue, user
 	return fmt.Sprintf("Adding label %q to issue #%d", userData.(string), *issue.Number)
 }
 
-func (o *versionLabel) Filter(c *operations.Context, issue *github.Issue) (bool, interface{}) {
-	return extractVersionLabels(issue)
+func (o *versionLabel) Filter(c *operations.Context, issue *github.Issue) (operations.FilterResult, interface{}) {
+	if b, label := extractVersionLabels(issue); b {
+		return operations.Accept, label
+	}
+	return operations.Reject, nil
 }
 
 func (o *versionLabel) ListOptions(c *operations.Context) *github.IssueListByRepoOptions {

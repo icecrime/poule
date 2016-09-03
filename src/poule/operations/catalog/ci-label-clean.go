@@ -52,7 +52,7 @@ func (o *ciFailureLabelClean) Describe(c *operations.Context, pr *github.PullReq
 	return ""
 }
 
-func (o *ciFailureLabelClean) Filter(c *operations.Context, pr *github.PullRequest) (bool, interface{}) {
+func (o *ciFailureLabelClean) Filter(c *operations.Context, pr *github.PullRequest) (operations.FilterResult, interface{}) {
 	// Fetch the issue information for that pull request: that's the only way
 	// to retrieve the labels.
 	issue, _, err := c.Client.Issues.Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
@@ -62,7 +62,7 @@ func (o *ciFailureLabelClean) Filter(c *operations.Context, pr *github.PullReque
 
 	// Skip any issue which doesn't have a label indicating CI failure.
 	if !utils.HasFailingCILabel(issue.Labels) {
-		return false, nil
+		return operations.Reject, nil
 	}
 
 	// List all statuses for that item.
@@ -74,7 +74,7 @@ func (o *ciFailureLabelClean) Filter(c *operations.Context, pr *github.PullReque
 
 	// Include this pull request as part of the filter, and store the failures
 	// information as part of the user data.
-	return true, utils.HasFailures(latestStatuses)
+	return operations.Accept, utils.HasFailures(latestStatuses)
 }
 
 func (o *ciFailureLabelClean) ListOptions(c *operations.Context) *github.PullRequestListOptions {

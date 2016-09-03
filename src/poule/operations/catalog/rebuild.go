@@ -63,7 +63,7 @@ func (o *prRebuild) Describe(c *operations.Context, pr *github.PullRequest, user
 	return fmt.Sprintf("Rebuilding pull request #%d for %s", *pr.Number, strings.Join(contexts, ", "))
 }
 
-func (o *prRebuild) Filter(c *operations.Context, pr *github.PullRequest) (bool, interface{}) {
+func (o *prRebuild) Filter(c *operations.Context, pr *github.PullRequest) (operations.FilterResult, interface{}) {
 	// Fetch the issue information for that pull request: that's the only way
 	// to retrieve the labels.
 	issue, _, err := c.Client.Issues.Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
@@ -73,7 +73,7 @@ func (o *prRebuild) Filter(c *operations.Context, pr *github.PullRequest) (bool,
 
 	// Skip all pull requests which are known to fail CI.
 	if utils.HasFailingCILabel(issue.Labels) {
-		return false, nil
+		return operations.Reject, nil
 	}
 
 	// Get all statuses for that item.
@@ -90,7 +90,7 @@ func (o *prRebuild) Filter(c *operations.Context, pr *github.PullRequest) (bool,
 			contexts = append(contexts, context)
 		}
 	}
-	return true, contexts
+	return operations.Accept, contexts
 }
 
 func (o *prRebuild) ListOptions(c *operations.Context) *github.PullRequestListOptions {
