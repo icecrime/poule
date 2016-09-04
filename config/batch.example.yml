@@ -2,7 +2,7 @@ delay:      30s
 dry-run:    True
 repository: docker/docker
 
-commands:
+operations:
 
     - type: ci-label-audit
 

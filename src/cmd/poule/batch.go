@@ -35,28 +35,28 @@ func doBatchCommand(c *cli.Context) {
 		// Execute each command described as part of the YAML file.
 		config := configuration.FromGlobalFlags(c)
 		batchConfig.Override(config)
-		for _, command := range batchConfig.Commands {
-			descriptor, ok := catalog.ByNameIndex[command.Type]
+		for _, operationConfig := range batchConfig.Operations {
+			descriptor, ok := catalog.ByNameIndex[operationConfig.Type]
 			if !ok {
-				log.Fatalf("Unknown operation %q in file %q", command.Type)
+				log.Fatalf("Unknown operation %q in file %q", operationConfig.Type)
 			}
-			runSingleOperation(config, descriptor.OperationFromConfig(command.Settings))
+			runSingleOperation(config, descriptor.OperationFromConfig(operationConfig.Settings))
 		}
 	}
 }
 
-type commandConfiguration struct {
-	Type     string                   `yaml:"type"`
-	Settings operations.Configuration `yaml:"settings"`
+type batchConfiguration struct {
+	Delay      *time.Duration           `yaml:"delay"`
+	DryRun     *bool                    `yaml:"dry-run"`
+	Repository *string                  `yaml:"repository"`
+	Token      *string                  `yaml:"token"`
+	TokenFile  *string                  `yaml:"token-file"`
+	Operations []operationConfiguration `yaml:"operations"`
 }
 
-type batchConfiguration struct {
-	Delay      *time.Duration         `yaml:"delay"`
-	DryRun     *bool                  `yaml:"dry-run"`
-	Repository *string                `yaml:"repository"`
-	Token      *string                `yaml:"token"`
-	TokenFile  *string                `yaml:"token-file"`
-	Commands   []commandConfiguration `yaml:"commands"`
+type operationConfiguration struct {
+	Type     string                   `yaml:"type"`
+	Settings operations.Configuration `yaml:"settings"`
 }
 
 func (b *batchConfiguration) Override(c *configuration.Config) {
