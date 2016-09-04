@@ -3,7 +3,9 @@ package catalog
 import (
 	"sort"
 
-	"github.com/codegangsta/cli"
+	"poule/operations"
+
+	"github.com/urfave/cli"
 )
 
 // Operation is an empty interface to encompass both issue and pull request
@@ -15,11 +17,16 @@ type OperationDescriptor interface {
 	// Name is a short-name for the operation.
 	Name() string
 
-	// Command returns a CLI command to invoke the operation.
-	Command() cli.Command
+	// Description returns as help message for the operation.
+	Description() string
 
-	// Operation returns a new instance of that operation.
-	Operation() Operation
+	// OperationFromCli returns a new instance of that operations configured as
+	// described by command line flags and arguemnts.
+	OperationFromCli(*cli.Context) Operation
+
+	// OperationFromConfig returns a new instance of that operation configured
+	// as described by the opaque `operations.Configuration` structure.
+	OperationFromConfig(operations.Configuration) Operation
 }
 
 type OperationDescriptors []OperationDescriptor
@@ -37,9 +44,13 @@ func (d OperationDescriptors) Swap(i, j int) {
 }
 
 // Index is the catalog of all known operations by name.
-var Index OperationDescriptors
+var (
+	Index       OperationDescriptors
+	ByNameIndex = map[string]OperationDescriptor{}
+)
 
 func registerOperation(descriptor OperationDescriptor) {
 	Index = append(Index, descriptor)
+	ByNameIndex[descriptor.Name()] = descriptor
 	sort.Sort(Index)
 }

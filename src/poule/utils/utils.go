@@ -6,10 +6,10 @@ import (
 	"log"
 	"strings"
 
-	"golang.org/x/oauth2"
+	"poule/configuration"
 
-	"github.com/codegangsta/cli"
 	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -18,13 +18,13 @@ const (
 	PouleToken     = "AUTOMATED:POULE"
 )
 
-func GetGitHubToken(c *cli.Context) string {
-	if v := c.GlobalString("token"); v != "" {
-		return c.GlobalString(v)
+func GetGitHubToken(c *configuration.Config) string {
+	if c.Token != "" {
+		return c.Token
 	}
 
-	if v := c.GlobalString("token-file"); v != "" {
-		if b, err := ioutil.ReadFile(v); err == nil {
+	if c.TokenFile != "" {
+		if b, err := ioutil.ReadFile(c.TokenFile); err == nil {
 			return string(b)
 		}
 	}
@@ -50,8 +50,8 @@ func HasFailures(statuses map[string]RepoStatus) bool {
 	return false
 }
 
-func IsDryRun(c *cli.Context) bool {
-	return c.GlobalBool("dry-run")
+func IsDryRun(c *configuration.Config) bool {
+	return c.DryRun
 }
 
 func PrintIssue(issue *github.Issue) {
@@ -62,16 +62,15 @@ func PrintIssue(issue *github.Issue) {
 	fmt.Printf("Issue #%d\n  Title:  %s\n  Labels: %s\n\n", *issue.Number, *issue.Title, strings.Join(labels, ", "))
 }
 
-func GetRepository(c *cli.Context) (string, string) {
-	repository := c.GlobalString("repository")
-	s := strings.SplitN(repository, "/", 2)
+func GetRepository(c *configuration.Config) (string, string) {
+	s := strings.SplitN(c.Repository, "/", 2)
 	if len(s) != 2 {
-		log.Fatalf("Invalid repository specification %q", repository)
+		log.Fatalf("Invalid repository specification %q", c.Repository)
 	}
 	return s[0], s[1]
 }
 
-func MakeGitHubClient(c *cli.Context) *github.Client {
+func MakeGitHubClient(c *configuration.Config) *github.Client {
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: GetGitHubToken(c)})
 	tc := oauth2.NewClient(oauth2.NoContext, ts)
 	return github.NewClient(tc)

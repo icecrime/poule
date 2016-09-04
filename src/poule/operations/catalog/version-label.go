@@ -7,8 +7,8 @@ import (
 
 	"poule/operations"
 
-	"github.com/codegangsta/cli"
 	"github.com/google/go-github/github"
+	"github.com/urfave/cli"
 )
 
 func init() {
@@ -17,21 +17,19 @@ func init() {
 
 type versionLabelDescriptor struct{}
 
+func (d *versionLabelDescriptor) Description() string {
+	return "apply version labels to issues"
+}
+
 func (d *versionLabelDescriptor) Name() string {
 	return "version-label"
 }
 
-func (d *versionLabelDescriptor) Command() cli.Command {
-	return cli.Command{
-		Name:  d.Name(),
-		Usage: "apply version labels to issues",
-		Action: func(c *cli.Context) {
-			operations.RunIssueOperation(c, &versionLabel{})
-		},
-	}
+func (d *versionLabelDescriptor) OperationFromCli(*cli.Context) Operation {
+	return &versionLabel{}
 }
 
-func (d *versionLabelDescriptor) Operation() Operation {
+func (d *versionLabelDescriptor) OperationFromConfig(config operations.Configuration) Operation {
 	return &versionLabel{}
 }
 

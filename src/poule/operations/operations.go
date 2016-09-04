@@ -4,9 +4,9 @@ import (
 	"log"
 	"time"
 
+	"poule/configuration"
 	"poule/utils"
 
-	"github.com/codegangsta/cli"
 	"github.com/google/go-github/github"
 )
 
@@ -37,6 +37,10 @@ const (
 	// failure could also mean that no Accept may further occur.
 	Terminal
 )
+
+// Configuration is an opaque data structure for operation-specific
+// configuration.
+type Configuration map[string]interface{}
 
 type IssueOperation interface {
 	// Apply applies the operation to the GitHub issue.
@@ -74,7 +78,7 @@ type PullRequestOperation interface {
 	ListOptions(*Context) *github.PullRequestListOptions
 }
 
-func RunIssueOperation(c *cli.Context, op IssueOperation) {
+func RunIssueOperation(c *configuration.Config, op IssueOperation) {
 	context := Context{}
 	context.Client = utils.MakeGitHubClient(c)
 	context.Username, context.Repository = utils.GetRepository(c)
@@ -112,13 +116,13 @@ func RunIssueOperation(c *cli.Context, op IssueOperation) {
 		// Move on to the next page, and respect the specified delay to avoid
 		// hammering the GitHub API.
 		page = resp.NextPage
-		if delay := c.GlobalDuration("delay"); delay > 0 {
-			time.Sleep(delay)
+		if c.Delay > 0 {
+			time.Sleep(c.Delay)
 		}
 	}
 }
 
-func RunPullRequestOperation(c *cli.Context, op PullRequestOperation) {
+func RunPullRequestOperation(c *configuration.Config, op PullRequestOperation) {
 	context := Context{}
 	context.Client = utils.MakeGitHubClient(c)
 	context.Username, context.Repository = utils.GetRepository(c)
@@ -157,8 +161,8 @@ func RunPullRequestOperation(c *cli.Context, op PullRequestOperation) {
 		// Move on to the next page, and respect the specified delay to avoid
 		// hammering the GitHub API.
 		page = resp.NextPage
-		if delay := c.GlobalDuration("delay"); delay > 0 {
-			time.Sleep(delay)
+		if c.Delay > 0 {
+			time.Sleep(c.Delay)
 		}
 	}
 }

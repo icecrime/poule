@@ -2,9 +2,9 @@
 	"version": 0,
 	"dependencies": [
 		{
-			"importpath": "github.com/codegangsta/cli",
-			"repository": "https://github.com/codegangsta/cli",
-			"revision": "33bb4c121333cd8eb7d8cc8d74474f4ec156f371",
+			"importpath": "github.com/BurntSushi/toml",
+			"repository": "https://github.com/BurntSushi/toml",
+			"revision": "99064174e013895bbd9b025c31100bd1d9b590ca",
 			"branch": "master"
 		},
 		{
@@ -20,6 +20,18 @@
 			"revision": "9235644dd9e52eeae6fa48efd539fdc351a0af53",
 			"branch": "master",
 			"path": "/query"
+		},
+		{
+			"importpath": "github.com/mitchellh/mapstructure",
+			"repository": "https://github.com/mitchellh/mapstructure",
+			"revision": "ca63d7c062ee3c9f34db231e352b60012b4fd0c1",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/urfave/cli",
+			"repository": "https://github.com/urfave/cli",
+			"revision": "df95e0708f6416a3f148c984464cfd417e9eccfe",
+			"branch": "master"
 		},
 		{
 			"importpath": "golang.org/x/net/context",
@@ -47,6 +59,12 @@
 			"revision": "79ffda073da804f325135da5ff645a630a4d7625",
 			"branch": "master",
 			"path": "/internal"
+		},
+		{
+			"importpath": "gopkg.in/urfave/cli.v1",
+			"repository": "https://gopkg.in/urfave/cli.v1",
+			"revision": "a14d7d367bc02b1f57d88de97926727f2d936387",
+			"branch": "master"
 		},
 		{
 			"importpath": "gopkg.in/yaml.v2",

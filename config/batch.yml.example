@@ -1,0 +1,12 @@
+delay:      30s
+dry-run:    True
+repository: docker/docker
+
+commands:
+
+    - type: ci-label-audit
+
+    - type: rebuild
+      settings:
+        configurations:
+            - experimental

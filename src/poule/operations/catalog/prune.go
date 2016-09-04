@@ -10,8 +10,8 @@ import (
 
 	"poule/utils"
 
-	"github.com/codegangsta/cli"
 	"github.com/google/go-github/github"
+	"github.com/urfave/cli"
 )
 
 func init() {
@@ -19,35 +19,43 @@ func init() {
 }
 
 func doRunPrune(c *cli.Context) {
-	action, err := parseAction(c.String("action"))
-	if err != nil {
-		log.Fatal(err)
-	}
+	/*
+		action, err := parseAction(c.String("action"))
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	filters, err := parseFilters(c.StringSlice("filter"))
-	if err != nil {
-		log.Fatal(err)
-	}
+		filters, err := parseFilters(c.StringSlice("filter"))
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	gracePeriod, err := parseExtDuration(c.String("grace-period"))
-	if err != nil {
-		log.Fatal(err)
-	}
+		gracePeriod, err := parseExtDuration(c.String("grace-period"))
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	outdatedThreshold, err := parseExtDuration(c.String("threshold"))
-	if err != nil {
-		log.Fatal(err)
-	}
+		outdatedThreshold, err := parseExtDuration(c.String("threshold"))
+		if err != nil {
+			log.Fatal(err)
+		}
+	*/
 
-	operations.RunIssueOperation(c, &prune{
-		action:            action,
-		filters:           filters,
-		gracePeriod:       gracePeriod,
-		outdatedThreshold: outdatedThreshold,
-	})
+	/*
+		operations.RunIssueOperation(c, &prune{
+			action:            action,
+			filters:           filters,
+			gracePeriod:       gracePeriod,
+			outdatedThreshold: outdatedThreshold,
+		})
+	*/
 }
 
 type pruneDescriptor struct{}
+
+func (d *pruneDescriptor) Description() string {
+	return "prune outdated issues"
+}
 
 func (d *pruneDescriptor) Name() string {
 	return "prune"
@@ -84,7 +92,11 @@ func (d *pruneDescriptor) Command() cli.Command {
 	}
 }
 
-func (d *pruneDescriptor) Operation() Operation {
+func (d *pruneDescriptor) OperationFromCli(c *cli.Context) Operation {
+	return &prune{}
+}
+
+func (d *pruneDescriptor) OperationFromConfig(c operations.Configuration) Operation {
 	return &prune{}
 }
 

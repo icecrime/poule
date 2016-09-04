@@ -7,8 +7,8 @@ import (
 	"poule/operations"
 	"poule/utils"
 
-	"github.com/codegangsta/cli"
 	"github.com/google/go-github/github"
+	"github.com/urfave/cli"
 )
 
 func init() {
@@ -17,22 +17,20 @@ func init() {
 
 type ciFailureLabelCleanDescriptor struct{}
 
+func (d *ciFailureLabelCleanDescriptor) Description() string {
+	return "clean CI failure labels"
+}
+
 func (d *ciFailureLabelCleanDescriptor) Name() string {
 	return "ci-label-clean"
 }
 
-func (d *ciFailureLabelCleanDescriptor) Command() cli.Command {
-	return cli.Command{
-		Name:  d.Name(),
-		Usage: "clean CI failure labels",
-		Action: func(c *cli.Context) {
-			operations.RunPullRequestOperation(c, &ciFailureLabelClean{})
-		},
-	}
+func (d *ciFailureLabelCleanDescriptor) OperationFromCli(*cli.Context) Operation {
+	return &ciFailureLabelClean{}
 }
 
-func (d *ciFailureLabelCleanDescriptor) Operation() Operation {
-	return &ciFailureLabelAudit{}
+func (d *ciFailureLabelCleanDescriptor) OperationFromConfig(operations.Configuration) Operation {
+	return &ciFailureLabelClean{}
 }
 
 type ciFailureLabelClean struct{}

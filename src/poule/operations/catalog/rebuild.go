@@ -12,8 +12,9 @@ import (
 	"poule/operations"
 	"poule/utils"
 
-	"github.com/codegangsta/cli"
 	"github.com/google/go-github/github"
+	"github.com/mitchellh/mapstructure"
+	"github.com/urfave/cli"
 )
 
 func init() {
@@ -22,28 +23,34 @@ func init() {
 
 type prRebuildDescriptor struct{}
 
+func (d *prRebuildDescriptor) Description() string {
+	return "rebuild failed pull requests"
+}
+
 func (d *prRebuildDescriptor) Name() string {
 	return "rebuild"
 }
 
-func (d *prRebuildDescriptor) Command() cli.Command {
-	return cli.Command{
-		Name:  d.Name(),
-		Usage: "rebuild failed pull requests",
-		Action: func(c *cli.Context) {
-			operations.RunPullRequestOperation(c, &prRebuild{
-				args: c.Args(),
-			})
-		},
+func (d *prRebuildDescriptor) CommandFlags() []cli.Flag {
+	return []cli.Flag{}
+}
+
+func (d *prRebuildDescriptor) OperationFromCli(c *cli.Context) Operation {
+	return &prRebuild{
+		Configurations: c.Args(),
 	}
 }
 
-func (d *prRebuildDescriptor) Operation() Operation {
-	return &ciFailureLabelAudit{}
+func (d *prRebuildDescriptor) OperationFromConfig(c operations.Configuration) Operation {
+	operation := &prRebuild{}
+	if err := mapstructure.Decode(c, &operation); err != nil {
+		log.Fatalf("Error creating operation from configuration: %v", err)
+	}
+	return operation
 }
 
 type prRebuild struct {
-	args cli.Args
+	Configurations []string
 }
 
 func (o *prRebuild) Apply(c *operations.Context, pr *github.PullRequest, userData interface{}) error {
@@ -85,7 +92,7 @@ func (o *prRebuild) Filter(c *operations.Context, pr *github.PullRequest) (opera
 
 	// Gather all contexts that need rebuilding.
 	contexts := []string{}
-	for _, context := range o.args {
+	for _, context := range o.Configurations {
 		if state := latestStatuses[context].State; state == "error" || state == "failure" {
 			contexts = append(contexts, context)
 		}
