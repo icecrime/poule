@@ -15,7 +15,7 @@ import (
 
 var batchCommand = cli.Command{
 	Name:   "batch",
-	Usage:  "run groups of commands described in files",
+	Usage:  "Run groups of commands described in files",
 	Action: doBatchCommand,
 }
 

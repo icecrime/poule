@@ -12,18 +12,17 @@ type IssueFilter interface {
 	Apply(*github.Issue) bool
 }
 
-func MakeIssueFilter(filterSpec string) (IssueFilter, error) {
-	for prefix, constructor := range map[string]func(string) (IssueFilter, error){
+func MakeIssueFilter(filterType, value string) (IssueFilter, error) {
+	typeMapping := map[string]func(string) (IssueFilter, error){
 		"assigned": makeAssignedApply,
 		"comments": makeCommentsApply,
 		"labels":   makeWithLabelsApply,
 		"~labels":  makeWithoutLabelsApply,
-	} {
-		if strings.HasPrefix(filterSpec, prefix) {
-			return constructor(filterSpec)
-		}
 	}
-	return nil, fmt.Errorf("Unknown filter type %q", filterSpec)
+	if constructor, ok := typeMapping[filterType]; ok {
+		return constructor(value)
+	}
+	return nil, fmt.Errorf("Unknown filter type %q", filterType)
 }
 
 // AssignedApply filters issues based on whether they are assigned or not.
@@ -31,14 +30,10 @@ type AssignedApply struct {
 	isAssigned bool
 }
 
-func makeAssignedApply(filterSpec string) (IssueFilter, error) {
-	s := strings.SplitN(filterSpec, "=", 2)
-	if len(s) != 2 {
-		return nil, fmt.Errorf("Bad format %q for \"assigned\" filter", filterSpec)
-	}
-	b, err := strconv.ParseBool(s[1])
+func makeAssignedApply(value string) (IssueFilter, error) {
+	b, err := strconv.ParseBool(value)
 	if err != nil {
-		return nil, fmt.Errorf("Invalid value %q for \"assigned\" filter", s[1])
+		return nil, fmt.Errorf("Invalid value %q for \"assigned\" filter", value)
 	}
 	return AssignedApply{b}, nil
 }
@@ -52,11 +47,11 @@ type CommentsApply struct {
 	predicate func(int) bool
 }
 
-func makeCommentsApply(filterSpec string) (IssueFilter, error) {
+func makeCommentsApply(value string) (IssueFilter, error) {
 	var count int
 	var operation rune
-	if n, err := fmt.Sscanf(filterSpec, "comments%c%d", &operation, &count); n != 2 || err != nil {
-		return nil, fmt.Errorf("Bad format %q for \"comments\" filter", filterSpec)
+	if n, err := fmt.Sscanf(value, "%c%d", &operation, &count); n != 2 || err != nil {
+		return nil, fmt.Errorf("Invalid value %q for \"comments\" filter", value)
 	}
 
 	var predicate func(int) bool
@@ -86,12 +81,8 @@ type WithLabelsApply struct {
 	labels []string
 }
 
-func makeWithLabelsApply(filterSpec string) (IssueFilter, error) {
-	s := strings.SplitN(filterSpec, "=", 2)
-	if len(s) != 2 {
-		return nil, fmt.Errorf("Bad format %q for \"labels\" filter", filterSpec)
-	}
-	labels := strings.Split(s[1], ",")
+func makeWithLabelsApply(value string) (IssueFilter, error) {
+	labels := strings.Split(value, ",")
 	return WithLabelsApply{labels}, nil
 }
 
@@ -105,12 +96,8 @@ type WithoutLabelsApply struct {
 	labels []string
 }
 
-func makeWithoutLabelsApply(filterSpec string) (IssueFilter, error) {
-	s := strings.SplitN(filterSpec, "=", 2)
-	if len(s) != 2 {
-		return nil, fmt.Errorf("Bad format %q for \"~labels\" filter", filterSpec)
-	}
-	labels := strings.Split(s[1], ",")
+func makeWithoutLabelsApply(value string) (IssueFilter, error) {
+	labels := strings.Split(value, ",")
 	return WithoutLabelsApply{labels}, nil
 }
 

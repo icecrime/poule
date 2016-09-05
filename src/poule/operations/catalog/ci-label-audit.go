@@ -18,7 +18,11 @@ func init() {
 type ciFailureLabelAuditDescriptor struct{}
 
 func (d *ciFailureLabelAuditDescriptor) Description() string {
-	return "audit CI failure labels"
+	return "Audit CI failure labels"
+}
+
+func (d *ciFailureLabelAuditDescriptor) Flags() []cli.Flag {
+	return nil
 }
 
 func (d *ciFailureLabelAuditDescriptor) Name() string {

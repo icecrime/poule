@@ -24,7 +24,11 @@ func init() {
 type prRebuildDescriptor struct{}
 
 func (d *prRebuildDescriptor) Description() string {
-	return "rebuild failed pull requests"
+	return "Rebuild failed pull requests"
+}
+
+func (d *prRebuildDescriptor) Flags() []cli.Flag {
+	return nil
 }
 
 func (d *prRebuildDescriptor) Name() string {

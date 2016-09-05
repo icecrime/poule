@@ -20,6 +20,9 @@ type OperationDescriptor interface {
 	// Description returns as help message for the operation.
 	Description() string
 
+	// Flags returns an array of operation-specific command line flags.
+	Flags() []cli.Flag
+
 	// OperationFromCli returns a new instance of that operations configured as
 	// described by command line flags and arguemnts.
 	OperationFromCli(*cli.Context) Operation

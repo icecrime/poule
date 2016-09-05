@@ -18,7 +18,11 @@ func init() {
 type versionLabelDescriptor struct{}
 
 func (d *versionLabelDescriptor) Description() string {
-	return "apply version labels to issues"
+	return "Apply version labels to issues"
+}
+
+func (d *versionLabelDescriptor) Flags() []cli.Flag {
+	return nil
 }
 
 func (d *versionLabelDescriptor) Name() string {

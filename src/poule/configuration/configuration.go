@@ -18,12 +18,12 @@ func Flags() []cli.Flag {
 	return []cli.Flag{
 		cli.DurationFlag{
 			Name:  "delay",
-			Usage: "Delay between GitHub operations",
+			Usage: "delay between GitHub operations",
 			Value: 10 * time.Second,
 		},
 		cli.BoolTFlag{
 			Name:  "dry-run",
-			Usage: "Simulate operations",
+			Usage: "simulate operations",
 		},
 		cli.StringFlag{
 			Name:  "repository",

@@ -18,7 +18,11 @@ func init() {
 type ciFailureLabelCleanDescriptor struct{}
 
 func (d *ciFailureLabelCleanDescriptor) Description() string {
-	return "clean CI failure labels"
+	return "Clean CI failure labels"
+}
+
+func (d *ciFailureLabelCleanDescriptor) Flags() []cli.Flag {
+	return nil
 }
 
 func (d *ciFailureLabelCleanDescriptor) Name() string {
