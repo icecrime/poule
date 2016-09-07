@@ -148,7 +148,7 @@ func (o *prune) Describe(c *operations.Context, issue *github.Issue, userData in
 func (o *prune) Filter(c *operations.Context, issue *github.Issue) (operations.FilterResult, interface{}) {
 	// Apply filters, if any.
 	for _, filter := range o.filters {
-		if !filter.Apply(issue) {
+		if !filter.ApplyIssue(issue) {
 			return operations.Reject, nil
 		}
 	}
