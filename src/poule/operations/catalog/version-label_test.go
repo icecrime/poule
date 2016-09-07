@@ -36,6 +36,7 @@ func TestVersionLabel(t *testing.T) {
 		"version/1.12":        "Server:\n \tVersion:\t  1.12.1",
 		"version/1.13":        "Server: Version: 1.13.1-rc1",
 		"version/1.14":        "Server: Version: 1.14.1-cs2",
+		"version/1.15":        "Server: Version: 1.15.3pouet",
 		"version/master":      "Server: Version: 1.2.3-dev",
 		"version/unsupported": "Server: Version: 1.2.3-toto",
 	} {
@@ -62,7 +63,11 @@ func TestVersionLabel(t *testing.T) {
 func TestVersionLabelRejects(t *testing.T) {
 	_, ctx := makeContext()
 	operation := versionLabel{}
-	for _, body := range []string{"Body", "1.11.0", "Version: 1.11.0"} {
+	for _, body := range []string{
+		"Body",
+		"1.11.0",
+		"Version: 1.12.0",
+	} {
 		issue := &github.Issue{Body: &body, Number: makeInt(test.IssueNumber)}
 		if res, _ := operation.Filter(ctx, issue); res != operations.Reject {
 			t.Fatalf("Unexpected result %v when filtering %q", res, body)
