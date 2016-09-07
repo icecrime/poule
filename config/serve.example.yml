@@ -1,0 +1,10 @@
+delay:      30s
+dry-run:    True
+repository: docker/docker
+
+events:
+
+    - type:   issue
+      action: opened
+      operations:
+          - type: version_label
