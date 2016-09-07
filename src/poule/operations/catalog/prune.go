@@ -120,19 +120,19 @@ func (o *prune) Apply(c *operations.Context, issue *github.Issue, userData inter
 		break
 	case "force-close":
 		state := "closed"
-		_, _, err := c.Client.Issues.Edit(c.Username, c.Repository, *issue.Number, &github.IssueRequest{
+		_, _, err := c.Client.Issues().Edit(c.Username, c.Repository, *issue.Number, &github.IssueRequest{
 			State: &state,
 		})
 		return err
 	case "ping":
 		body := formatPingComment(issue, o)
-		_, _, err := c.Client.Issues.CreateComment(c.Username, c.Repository, *issue.Number, &github.IssueComment{
+		_, _, err := c.Client.Issues().CreateComment(c.Username, c.Repository, *issue.Number, &github.IssueComment{
 			Body: &body,
 		})
 		return err
 	case "warn":
 		body := formatWarnComment(issue, o)
-		_, _, err := c.Client.Issues.CreateComment(c.Username, c.Repository, *issue.Number, &github.IssueComment{
+		_, _, err := c.Client.Issues().CreateComment(c.Username, c.Repository, *issue.Number, &github.IssueComment{
 			Body: &body,
 		})
 		return err
@@ -155,7 +155,7 @@ func (o *prune) Filter(c *operations.Context, issue *github.Issue) (operations.F
 
 	// Retrieve comments for that issue since our threshold plus our grace
 	// period plus one day.
-	comments, _, err := c.Client.Issues.ListComments(c.Username, c.Repository, *issue.Number, &github.IssueListCommentsOptions{
+	comments, _, err := c.Client.Issues().ListComments(c.Username, c.Repository, *issue.Number, &github.IssueListCommentsOptions{
 		Since: time.Now().Add(-1*o.outdatedThreshold.Duration()).Add(-1*o.gracePeriod.Duration()).AddDate(0, 0, -1),
 		ListOptions: github.ListOptions{
 			PerPage: 200,

@@ -71,13 +71,13 @@ func (o *ciFailureLabelAudit) Filter(c *operations.Context, pr *github.PullReque
 
 	// Fetch the issue information for that pull request: that's the only way
 	// to retrieve the labels.
-	issue, _, err := c.Client.Issues.Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
+	issue, _, err := c.Client.Issues().Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
 	if err != nil {
 		log.Fatalf("Error getting issue %d: %v", *pr.Number, err)
 	}
 
 	// List all statuses for that item.
-	repoStatuses, _, err := c.Client.Repositories.ListStatuses(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Head.SHA, nil)
+	repoStatuses, _, err := c.Client.Repositories().ListStatuses(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Head.SHA, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

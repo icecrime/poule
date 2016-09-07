@@ -33,14 +33,14 @@ func (d *versionLabelDescriptor) OperationFromCli(*cli.Context) Operation {
 	return &versionLabel{}
 }
 
-func (d *versionLabelDescriptor) OperationFromConfig(config operations.Configuration) Operation {
+func (d *versionLabelDescriptor) OperationFromConfig(operations.Configuration) Operation {
 	return &versionLabel{}
 }
 
 type versionLabel struct{}
 
 func (o *versionLabel) Apply(c *operations.Context, issue *github.Issue, userData interface{}) error {
-	_, _, err := c.Client.Issues.AddLabelsToIssue(c.Username, c.Repository, *issue.Number, []string{userData.(string)})
+	_, _, err := c.Client.Issues().AddLabelsToIssue(c.Username, c.Repository, *issue.Number, []string{userData.(string)})
 	return err
 }
 
@@ -65,12 +65,14 @@ func (o *versionLabel) ListOptions(c *operations.Context) *github.IssueListByRep
 }
 
 func extractVersionLabels(issue *github.Issue) (bool, string) {
-	serverVersion := regexp.MustCompile(`Server:\s+Version:\s+(\d+\.\d+\.\d+)-?(\S*)`)
+	if issue.Body == nil {
+		return false, ""
+	}
+	serverVersion := regexp.MustCompile(`Server:\s+Version:\s+(\d+\.\d+\.\d+)-?(\w*)`)
 	versionSubmatch := serverVersion.FindStringSubmatch(*issue.Body)
 	if len(versionSubmatch) < 3 {
 		return false, ""
 	}
-
 	label := labelFromVersion(versionSubmatch[1], versionSubmatch[2])
 	return true, label
 }

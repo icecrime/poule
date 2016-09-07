@@ -42,7 +42,7 @@ type ciFailureLabelClean struct{}
 func (o *ciFailureLabelClean) Apply(c *operations.Context, pr *github.PullRequest, userData interface{}) error {
 	var err error
 	if hasFailures := userData.(bool); hasFailures {
-		_, err = c.Client.Issues.RemoveLabelForIssue(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number, utils.FailingCILabel)
+		_, err = c.Client.Issues().RemoveLabelForIssue(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number, utils.FailingCILabel)
 	}
 	return err
 }
@@ -57,7 +57,7 @@ func (o *ciFailureLabelClean) Describe(c *operations.Context, pr *github.PullReq
 func (o *ciFailureLabelClean) Filter(c *operations.Context, pr *github.PullRequest) (operations.FilterResult, interface{}) {
 	// Fetch the issue information for that pull request: that's the only way
 	// to retrieve the labels.
-	issue, _, err := c.Client.Issues.Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
+	issue, _, err := c.Client.Issues().Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
 	if err != nil {
 		log.Fatalf("Error getting issue %d: %v", *pr.Number, err)
 	}
@@ -68,7 +68,7 @@ func (o *ciFailureLabelClean) Filter(c *operations.Context, pr *github.PullReque
 	}
 
 	// List all statuses for that item.
-	repoStatuses, _, err := c.Client.Repositories.ListStatuses(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Head.SHA, nil)
+	repoStatuses, _, err := c.Client.Repositories().ListStatuses(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Head.SHA, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

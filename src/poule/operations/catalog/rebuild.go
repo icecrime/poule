@@ -41,12 +41,15 @@ func (d *prRebuildDescriptor) CommandFlags() []cli.Flag {
 
 func (d *prRebuildDescriptor) OperationFromCli(c *cli.Context) Operation {
 	return &prRebuild{
+		Builder:        rebuildPR,
 		Configurations: c.Args(),
 	}
 }
 
 func (d *prRebuildDescriptor) OperationFromConfig(c operations.Configuration) Operation {
-	operation := &prRebuild{}
+	operation := &prRebuild{
+		Builder: rebuildPR,
+	}
 	if err := mapstructure.Decode(c, &operation); err != nil {
 		log.Fatalf("Error creating operation from configuration: %v", err)
 	}
@@ -54,12 +57,13 @@ func (d *prRebuildDescriptor) OperationFromConfig(c operations.Configuration) Op
 }
 
 type prRebuild struct {
-	Configurations []string
+	Builder        func(pr *github.PullRequest, context string) error
+	Configurations []string `mapstructure:"configurations"`
 }
 
 func (o *prRebuild) Apply(c *operations.Context, pr *github.PullRequest, userData interface{}) error {
 	for _, context := range userData.([]string) {
-		if err := rebuildPR(pr, context); err != nil {
+		if err := o.Builder(pr, context); err != nil {
 			return fmt.Errorf("error rebuilding pull request %d: %v", *pr.Number, err)
 		}
 	}
@@ -77,7 +81,7 @@ func (o *prRebuild) Describe(c *operations.Context, pr *github.PullRequest, user
 func (o *prRebuild) Filter(c *operations.Context, pr *github.PullRequest) (operations.FilterResult, interface{}) {
 	// Fetch the issue information for that pull request: that's the only way
 	// to retrieve the labels.
-	issue, _, err := c.Client.Issues.Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
+	issue, _, err := c.Client.Issues().Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
 	if err != nil {
 		log.Fatalf("Error getting issue %d: %v", *pr.Number, err)
 	}
@@ -88,7 +92,7 @@ func (o *prRebuild) Filter(c *operations.Context, pr *github.PullRequest) (opera
 	}
 
 	// Get all statuses for that item.
-	repoStatuses, _, err := c.Client.Repositories.ListStatuses(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Head.SHA, nil)
+	repoStatuses, _, err := c.Client.Repositories().ListStatuses(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Head.SHA, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

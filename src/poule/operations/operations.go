@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"poule/configuration"
+	"poule/gh"
 	"poule/utils"
 
 	"github.com/google/go-github/github"
@@ -12,7 +13,7 @@ import (
 
 type Context struct {
 	// Client is the GitHub API client instance.
-	Client *github.Client
+	Client gh.Client
 
 	// Username is the owner of the GitHub repository.
 	Username string
@@ -80,8 +81,8 @@ type PullRequestOperation interface {
 
 func RunIssueOperation(c *configuration.Config, op IssueOperation) {
 	context := Context{}
-	context.Client = utils.MakeGitHubClient(c)
-	context.Username, context.Repository = utils.GetRepository(c)
+	context.Client = gh.MakeClient(c)
+	context.Username, context.Repository = gh.GetRepository(c.Repository)
 
 	for page := 1; page != 0; {
 		// Retrieve the list options from the operation, and override the page
@@ -90,7 +91,7 @@ func RunIssueOperation(c *configuration.Config, op IssueOperation) {
 		listOptions.ListOptions.Page = page
 
 		// List all issues for that repository with the specific settings.
-		issues, resp, err := context.Client.Issues.ListByRepo(context.Username, context.Repository, listOptions)
+		issues, resp, err := context.Client.Issues().ListByRepo(context.Username, context.Repository, listOptions)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -124,8 +125,8 @@ func RunIssueOperation(c *configuration.Config, op IssueOperation) {
 
 func RunPullRequestOperation(c *configuration.Config, op PullRequestOperation) {
 	context := Context{}
-	context.Client = utils.MakeGitHubClient(c)
-	context.Username, context.Repository = utils.GetRepository(c)
+	context.Client = gh.MakeClient(c)
+	context.Username, context.Repository = gh.GetRepository(c.Repository)
 
 	for page := 1; page != 0; {
 		// Retrieve the list options from the operation, and override the page
@@ -134,7 +135,7 @@ func RunPullRequestOperation(c *configuration.Config, op PullRequestOperation) {
 		listOptions.ListOptions.Page = page
 
 		// List all issues for that repository with the specific settings.
-		prs, resp, err := context.Client.PullRequests.List(context.Username, context.Repository, listOptions)
+		prs, resp, err := context.Client.PullRequests().List(context.Username, context.Repository, listOptions)
 		if err != nil {
 			log.Fatal(err)
 		}
