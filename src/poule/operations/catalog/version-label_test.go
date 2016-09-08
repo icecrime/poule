@@ -9,18 +9,6 @@ import (
 	"github.com/google/go-github/github"
 )
 
-func makeInt(value int) *int {
-	v := new(int)
-	*v = value
-	return v
-}
-
-func makeString(value string) *string {
-	v := new(string)
-	*v = value
-	return v
-}
-
 func makeContext() (*test.TestClient, *operations.Context) {
 	clt := &test.TestClient{}
 	return clt, &operations.Context{
@@ -41,13 +29,13 @@ func TestVersionLabel(t *testing.T) {
 		"version/unsupported": "Server: Version: 1.2.3-toto",
 	} {
 		clt, ctx := makeContext()
-		issue := &github.Issue{Body: &body, Number: makeInt(test.IssueNumber)}
+		operation := versionLabel{}
 
+		issue := test.NewIssueBuilder(test.IssueNumber).Body(body).Value
 		clt.MockIssues.
 			On("AddLabelsToIssue", ctx.Username, ctx.Repository, test.IssueNumber, []string{expected}).
-			Return([]github.Label{github.Label{Name: makeString(expected)}}, nil, nil)
+			Return([]github.Label{github.Label{Name: test.MakeString(expected)}}, nil, nil)
 
-		operation := versionLabel{}
 		res, userData := operation.Filter(ctx, issue)
 		if res != operations.Accept {
 			t.Fatalf("Expected filter to accept %q, got %v", body, res)
@@ -63,12 +51,13 @@ func TestVersionLabel(t *testing.T) {
 func TestVersionLabelRejects(t *testing.T) {
 	_, ctx := makeContext()
 	operation := versionLabel{}
+
 	for _, body := range []string{
 		"Body",
 		"1.11.0",
 		"Version: 1.12.0",
 	} {
-		issue := &github.Issue{Body: &body, Number: makeInt(test.IssueNumber)}
+		issue := test.NewIssueBuilder(test.IssueNumber).Body(body).Value
 		if res, _ := operation.Filter(ctx, issue); res != operations.Reject {
 			t.Fatalf("Unexpected result %v when filtering %q", res, body)
 		}

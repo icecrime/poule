@@ -69,9 +69,9 @@ type PullRequestOperation interface {
 	// specified pull request with the specified context.
 	Describe(*Context, *github.PullRequest, interface{}) string
 
-	// Filter returns whether that operation should apply to the specified
-	// pull request, and an operation specific user data that is guaranteed to
-	// be passed on Apply and Describe invocation.
+	// Filter returns whether that operation should apply to the specified pull
+	// request, and an operation specific user data that is guaranteed to be
+	// passed on Apply and Describe invocation.
 	Filter(*Context, *github.PullRequest) (FilterResult, interface{})
 
 	// ListOptions returns the global filtering options to apply when listing

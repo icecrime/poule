@@ -9,95 +9,86 @@ import (
 	"poule/utils"
 
 	"github.com/google/go-github/github"
+	"github.com/stretchr/testify/mock"
 )
 
-func mockBuilder(pr *github.PullRequest, context string) error {
-	return nil
+type mockBuilder struct {
+	mock.Mock
+}
+
+func (m *mockBuilder) Rebuild(pr *github.PullRequest, context string) error {
+	return m.Called(pr, context).Error(0)
+}
+
+func makeRebuildOperation(configurations []string) (operations.PullRequestOperation, *mock.Mock) {
+	m := &mockBuilder{}
+	operation := &prRebuild{
+		Builder:        m.Rebuild,
+		Configurations: configurations,
+	}
+	return operation, &m.Mock
 }
 
 func TestRebuild(t *testing.T) {
-	gitSha := "d34db3333f"
-	issue := &github.Issue{
-		Number: makeInt(test.IssueNumber),
-	}
-	pullrequest := &github.PullRequest{
-		Base: &github.PullRequestBranch{
-			Repo: &github.Repository{
-				FullName: makeString("fullName"),
-				Name:     makeString(test.Repository),
-				Owner: &github.User{
-					Login: makeString(test.Username),
-				},
-			},
-		},
-		Head: &github.PullRequestBranch{
-			SHA: makeString(gitSha),
-		},
-		Number: makeInt(test.IssueNumber),
-	}
-
-	//var m mock.Mock
-	operation := prRebuild{
-		Builder: func(pr *github.PullRequest, context string) error {
-			return nil
-			//return m.Called(pr, context).Error(0)
-		},
-		Configurations: []string{"test"},
-	}
-
-	now := time.Now()
 	clt, ctx := makeContext()
-	clt.MockIssues.On("Get", ctx.Username, ctx.Repository, test.IssueNumber).Return(issue, nil, nil)
-	clt.MockRepositories.
-		On("ListStatuses", ctx.Username, ctx.Repository, gitSha, (*github.ListOptions)(nil)).
-		Return([]github.RepoStatus{
-			github.RepoStatus{
-				Context:   makeString("test"),
-				CreatedAt: &now,
-				State:     makeString("failure"),
-			},
-		}, nil, nil)
+	commitSHA := "baddcafe"
+	operation, mockBuilder := makeRebuildOperation([]string{
+		"conf_error",
+		"conf_fail",
+		"conf_pending",
+		"conf_success",
+	})
 
-	res, userData := operation.Filter(ctx, pullrequest)
+	// Create test pull request and related issue object.
+	issue := test.NewIssueBuilder(test.IssueNumber).Value
+	pullr := test.NewPullRequestBuilder(test.IssueNumber).
+		HeadBranch(ctx.Username, ctx.Repository, commitSHA).
+		BaseBranch(ctx.Username, ctx.Repository, test.CommitSHA).Value
+	clt.MockIssues.On("Get", ctx.Username, ctx.Repository, test.IssueNumber).Return(issue, nil, nil)
+
+	// Mock GitHub API replies to issue and statuses retrieval. We expect that
+	// the operation will only attempt to rebuild the "conf_error" and the
+	// "conf_fail" jobs, and neither the pending, the succesful one (even if it
+	// did previously fail), and the one that failed but was not included in
+	// the configurations to rebuild.
+	currentTime := time.Now()
+	repoStatuses := []github.RepoStatus{
+		test.MakeStatus("conf_error", "error", currentTime.Add(-24*time.Hour)),
+		test.MakeStatus("conf_fail", "success", currentTime.Add(-1*time.Hour)),
+		test.MakeStatus("conf_fail", "failure", currentTime),
+		test.MakeStatus("conf_pending", "pending", currentTime),
+		test.MakeStatus("conf_success", "failure", currentTime.Add(-3*time.Hour)),
+		test.MakeStatus("conf_success", "success", currentTime.Add(-2*time.Hour)),
+		test.MakeStatus("conf_other_fail", "failure", currentTime),
+	}
+	mockBuilder.On("Rebuild", pullr, "conf_fail").Return(nil)
+	mockBuilder.On("Rebuild", pullr, "conf_error").Return(nil)
+	clt.MockRepositories.On("ListStatuses", ctx.Username, ctx.Repository, commitSHA, (*github.ListOptions)(nil)).Return(repoStatuses, nil, nil)
+
+	// Call into the operation.
+	res, userData := operation.Filter(ctx, pullr)
 	if res != operations.Accept {
 		t.Fatalf("Rebuild filer should accept issue with failure")
 	}
-	if err := operation.Apply(ctx, pullrequest, userData); err != nil {
+	if err := operation.Apply(ctx, pullr, userData); err != nil {
 		t.Fatalf("Rebuild apply returned unexpected error %v", err)
 	}
-
+	clt.MockIssues.AssertExpectations(t)
 	clt.MockRepositories.AssertExpectations(t)
 }
 
 func TestRebuildSkipFailing(t *testing.T) {
-	issue := &github.Issue{
-		Number: makeInt(test.IssueNumber),
-		Labels: []github.Label{
-			github.Label{
-				Name: makeString(utils.FailingCILabel),
-			},
-		},
-	}
-	pullrequest := &github.PullRequest{
-		Base: &github.PullRequestBranch{
-			Repo: &github.Repository{
-				FullName: makeString("fullName"),
-				Name:     makeString(test.Repository),
-				Owner: &github.User{
-					Login: makeString(test.Username),
-				},
-			},
-		},
-		Number: makeInt(test.IssueNumber),
-	}
-
 	clt, ctx := makeContext()
+	operation, _ := makeRebuildOperation([]string{"test"})
+
+	// Create test pull request and related issue object.
+	issue := test.NewIssueBuilder(test.IssueNumber).Labels([]string{utils.FailingCILabel}).Value
+	pullr := test.NewPullRequestBuilder(test.IssueNumber).BaseBranch(ctx.Username, ctx.Repository, test.CommitSHA).Value
 	clt.MockIssues.On("Get", ctx.Username, ctx.Repository, test.IssueNumber).Return(issue, nil, nil)
 
-	operation := prRebuild{Configurations: []string{"test"}}
-	if res, _ := operation.Filter(ctx, pullrequest); res != operations.Reject {
+	// Call into the operation.
+	if res, _ := operation.Filter(ctx, pullr); res != operations.Reject {
 		t.Fatalf("Rebuild filter should reject issue with label %q", test.IssueNumber)
 	}
-
 	clt.MockIssues.AssertExpectations(t)
 }
