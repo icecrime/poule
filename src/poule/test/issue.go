@@ -1,6 +1,10 @@
 package test
 
-import "github.com/google/go-github/github"
+import (
+	"poule/gh"
+
+	"github.com/google/go-github/github"
+)
 
 func NewIssueBuilder(number int) *IssueBuilder {
 	return &IssueBuilder{
@@ -12,6 +16,10 @@ func NewIssueBuilder(number int) *IssueBuilder {
 
 type IssueBuilder struct {
 	Value *github.Issue
+}
+
+func (p *IssueBuilder) Item() gh.Item {
+	return gh.MakeItem(p.Value)
 }
 
 func (p *IssueBuilder) Body(body string) *IssueBuilder {

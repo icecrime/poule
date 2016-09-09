@@ -33,23 +33,23 @@ func main() {
 }
 
 func makeCommand(descriptor catalog.OperationDescriptor) cli.Command {
+	cliDescription := descriptor.CommandLineDescription()
 	return cli.Command{
 		Category: "Operations",
-		Flags:    descriptor.Flags(),
-		Name:     descriptor.Name(),
-		Usage:    descriptor.Description(),
+		Flags:    cliDescription.Flags,
+		Name:     cliDescription.Name,
+		Usage:    cliDescription.Description,
 		Action: func(c *cli.Context) {
 			runSingleOperation(configuration.FromGlobalFlags(c), descriptor.OperationFromCli(c))
 		},
 	}
 }
 
-func runSingleOperation(c *configuration.Config, operation catalog.Operation) {
-	if op, ok := operation.(operations.IssueOperation); ok {
-		operations.RunIssueOperation(c, op)
-	} else if op, ok := operation.(operations.PullRequestOperation); ok {
-		operations.RunPullRequestOperation(c, op)
-	} else {
-		log.Fatalf("Invalid operation type: %#v", operation)
+func runSingleOperation(c *configuration.Config, op operations.Operation) {
+	if op.Accepts()&operations.Issues == operations.Issues {
+		operations.RunOnIssues(c, op)
+	}
+	if op.Accepts()&operations.PullRequests == operations.PullRequests {
+		operations.RunOnPullRequests(c, op)
 	}
 }

@@ -1,6 +1,10 @@
 package test
 
-import "github.com/google/go-github/github"
+import (
+	"poule/gh"
+
+	"github.com/google/go-github/github"
+)
 
 func NewPullRequestBuilder(number int) *PullRequestBuilder {
 	return &PullRequestBuilder{
@@ -12,6 +16,10 @@ func NewPullRequestBuilder(number int) *PullRequestBuilder {
 
 type PullRequestBuilder struct {
 	Value *github.PullRequest
+}
+
+func (p *PullRequestBuilder) Item() gh.Item {
+	return gh.MakeItem(p.Value)
 }
 
 func (p *PullRequestBuilder) BaseBranch(username, repository, SHA string) *PullRequestBuilder {

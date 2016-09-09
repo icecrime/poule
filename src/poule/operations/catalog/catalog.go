@@ -8,28 +8,32 @@ import (
 	"github.com/urfave/cli"
 )
 
-// Operation is an empty interface to encompass both issue and pull request
-// operations in a single descriptor type.
-type Operation interface{}
+// CommandLineDescription describes the command-line interface for an
+// operation.
+type CommandLineDescription struct {
+	// Name is the operation's command.
+	Name string
+
+	// Description is the operation's help message.
+	Description string
+
+	// Flags is an array of operation-specific command line flags.
+	Flags []cli.Flag
+}
 
 // OperationDescriptor describes an operation.
 type OperationDescriptor interface {
-	// Name is a short-name for the operation.
-	Name() string
-
-	// Description returns as help message for the operation.
-	Description() string
-
-	// Flags returns an array of operation-specific command line flags.
-	Flags() []cli.Flag
+	// CommandLineDescription returns the necessary information to populate the
+	// command line with that operation.
+	CommandLineDescription() CommandLineDescription
 
 	// OperationFromCli returns a new instance of that operations configured as
 	// described by command line flags and arguemnts.
-	OperationFromCli(*cli.Context) Operation
+	OperationFromCli(*cli.Context) operations.Operation
 
 	// OperationFromConfig returns a new instance of that operation configured
 	// as described by the opaque `operations.Configuration` structure.
-	OperationFromConfig(operations.Configuration) Operation
+	OperationFromConfig(operations.Configuration) operations.Operation
 }
 
 type OperationDescriptors []OperationDescriptor
@@ -39,7 +43,7 @@ func (d OperationDescriptors) Len() int {
 }
 
 func (d OperationDescriptors) Less(i, j int) bool {
-	return d[i].Name() < d[j].Name()
+	return d[i].CommandLineDescription().Name < d[j].CommandLineDescription().Name
 }
 
 func (d OperationDescriptors) Swap(i, j int) {
@@ -54,6 +58,6 @@ var (
 
 func registerOperation(descriptor OperationDescriptor) {
 	Index = append(Index, descriptor)
-	ByNameIndex[descriptor.Name()] = descriptor
+	ByNameIndex[descriptor.CommandLineDescription().Name] = descriptor
 	sort.Sort(Index)
 }

@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"poule/gh"
 	"poule/operations"
 	"poule/test"
 	"poule/utils"
@@ -20,9 +21,9 @@ func (m *mockBuilder) Rebuild(pr *github.PullRequest, context string) error {
 	return m.Called(pr, context).Error(0)
 }
 
-func makeRebuildOperation(configurations []string) (operations.PullRequestOperation, *mock.Mock) {
+func makeRebuildOperation(configurations []string) (operations.Operation, *mock.Mock) {
 	m := &mockBuilder{}
-	operation := &prRebuild{
+	operation := &prRebuildOperation{
 		Builder:        m.Rebuild,
 		Configurations: configurations,
 	}
@@ -66,11 +67,12 @@ func TestRebuild(t *testing.T) {
 	clt.MockRepositories.On("ListStatuses", ctx.Username, ctx.Repository, commitSHA, (*github.ListOptions)(nil)).Return(repoStatuses, nil, nil)
 
 	// Call into the operation.
-	res, userData := operation.Filter(ctx, pullr)
+	item := gh.MakeItem(pullr)
+	res, userData := operation.Filter(ctx, item)
 	if res != operations.Accept {
 		t.Fatalf("Rebuild filer should accept issue with failure")
 	}
-	if err := operation.Apply(ctx, pullr, userData); err != nil {
+	if err := operation.Apply(ctx, item, userData); err != nil {
 		t.Fatalf("Rebuild apply returned unexpected error %v", err)
 	}
 	clt.MockIssues.AssertExpectations(t)
@@ -87,7 +89,8 @@ func TestRebuildSkipFailing(t *testing.T) {
 	clt.MockIssues.On("Get", ctx.Username, ctx.Repository, test.IssueNumber).Return(issue, nil, nil)
 
 	// Call into the operation.
-	if res, _ := operation.Filter(ctx, pullr); res != operations.Reject {
+	item := gh.MakeItem(pullr)
+	if res, _ := operation.Filter(ctx, item); res != operations.Reject {
 		t.Fatalf("Rebuild filter should reject issue with label %q", test.IssueNumber)
 	}
 	clt.MockIssues.AssertExpectations(t)

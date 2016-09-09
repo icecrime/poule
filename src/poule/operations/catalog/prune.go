@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"poule/gh"
 	"poule/utils"
 
 	"github.com/google/go-github/github"
@@ -29,39 +30,35 @@ type pruneConfig struct {
 
 type pruneFilterDescription map[string][]string
 
-func (d *pruneDescriptor) Description() string {
-	return "Prune outdated issues"
-}
-
-func (d *pruneDescriptor) Flags() []cli.Flag {
-	return []cli.Flag{
-		cli.StringFlag{
-			Name:  "action",
-			Usage: "action to take for outdated issues",
-			Value: "ping",
-		},
-		cli.StringSliceFlag{
-			Name:  "filter",
-			Usage: "filter based on issue attributes",
-		},
-		cli.StringFlag{
-			Name:  "grace-period",
-			Usage: "grace period before closing",
-			Value: "2w",
-		},
-		cli.StringFlag{
-			Name:  "threshold",
-			Usage: "threshold in days, weeks, months, or years",
-			Value: "6m",
+func (d *pruneDescriptor) CommandLineDescription() CommandLineDescription {
+	return CommandLineDescription{
+		Name:        "prune",
+		Description: "Prune outdatedissues",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "action",
+				Usage: "action to take for outdated issues",
+				Value: "ping",
+			},
+			cli.StringSliceFlag{
+				Name:  "filter",
+				Usage: "filter based on issue attributes",
+			},
+			cli.StringFlag{
+				Name:  "grace-period",
+				Usage: "grace period before closing",
+				Value: "2w",
+			},
+			cli.StringFlag{
+				Name:  "threshold",
+				Usage: "threshold in days, weeks, months, or years",
+				Value: "6m",
+			},
 		},
 	}
 }
 
-func (d *pruneDescriptor) Name() string {
-	return "prune"
-}
-
-func (d *pruneDescriptor) OperationFromCli(c *cli.Context) Operation {
+func (d *pruneDescriptor) OperationFromCli(c *cli.Context) operations.Operation {
 	pruneConfig := &pruneConfig{
 		Action:            c.String("action"),
 		Filters:           pruneFilterDescription{},
@@ -78,7 +75,7 @@ func (d *pruneDescriptor) OperationFromCli(c *cli.Context) Operation {
 	return d.makeOperation(pruneConfig)
 }
 
-func (d *pruneDescriptor) OperationFromConfig(c operations.Configuration) Operation {
+func (d *pruneDescriptor) OperationFromConfig(c operations.Configuration) operations.Operation {
 	pruneConfig := &pruneConfig{}
 	if err := mapstructure.Decode(c, &pruneConfig); err != nil {
 		log.Fatalf("Error creating operation from configuration: %v", err)
@@ -86,10 +83,10 @@ func (d *pruneDescriptor) OperationFromConfig(c operations.Configuration) Operat
 	return d.makeOperation(pruneConfig)
 }
 
-func (d *pruneDescriptor) makeOperation(config *pruneConfig) Operation {
+func (d *pruneDescriptor) makeOperation(config *pruneConfig) operations.Operation {
 	var (
 		err       error
-		operation prune
+		operation pruneOperation
 	)
 	if operation.action, err = parseAction(config.Action); err != nil {
 		log.Fatal(err)
@@ -106,14 +103,19 @@ func (d *pruneDescriptor) makeOperation(config *pruneConfig) Operation {
 	return &operation
 }
 
-type prune struct {
+type pruneOperation struct {
 	action            string
 	filters           []utils.IssueFilter
 	gracePeriod       utils.ExtDuration
 	outdatedThreshold utils.ExtDuration
 }
 
-func (o *prune) Apply(c *operations.Context, issue *github.Issue, userData interface{}) error {
+func (o *pruneOperation) Accepts() operations.AcceptedType {
+	return operations.Issues
+}
+
+func (o *pruneOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
+	issue := item.Issue()
 	switch o.action {
 	case "close":
 		// TODO Find the last ping/warn message, and take the grace period into account.
@@ -140,13 +142,15 @@ func (o *prune) Apply(c *operations.Context, issue *github.Issue, userData inter
 	return nil
 }
 
-func (o *prune) Describe(c *operations.Context, issue *github.Issue, userData interface{}) string {
+func (o *pruneOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
+	issue := item.Issue()
 	return fmt.Sprintf("Execute %s action on issue #%d (last commented on %s)",
 		o.action, *issue.Number, userData.(time.Time).Format(time.RFC3339))
 }
 
-func (o *prune) Filter(c *operations.Context, issue *github.Issue) (operations.FilterResult, interface{}) {
+func (o *pruneOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}) {
 	// Apply filters, if any.
+	issue := item.Issue()
 	for _, filter := range o.filters {
 		if !filter.ApplyIssue(issue) {
 			return operations.Reject, nil
@@ -187,7 +191,7 @@ func (o *prune) Filter(c *operations.Context, issue *github.Issue) (operations.F
 	return operations.Accept, lastCommented
 }
 
-func (o *prune) ListOptions(c *operations.Context) *github.IssueListByRepoOptions {
+func (o *pruneOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {
 	return &github.IssueListByRepoOptions{
 		State:     "open",
 		Sort:      "updated",
@@ -198,7 +202,12 @@ func (o *prune) ListOptions(c *operations.Context) *github.IssueListByRepoOption
 	}
 }
 
-func formatPingComment(issue *github.Issue, o *prune) string {
+func (o *pruneOperation) PullRequestListOptions(c *operations.Context) *github.PullRequestListOptions {
+	// pruneOperation doesn't apply to GitHub pull requests.
+	return nil
+}
+
+func formatPingComment(issue *github.Issue, o *pruneOperation) string {
 	comment := `<!-- %s:%s:%d%c -->
 @%s It has been detected that this issue has not received any activity in over %s. Can you please let us know if it is still relevant:
 
@@ -216,7 +225,7 @@ Thank you!`
 	)
 }
 
-func formatWarnComment(issue *github.Issue, o *prune) string {
+func formatWarnComment(issue *github.Issue, o *pruneOperation) string {
 	comment := `%s
 Thank you very much for your help! The issue will be **automatically closed in %s** unless it is commented on.
 `

@@ -29,9 +29,9 @@ func TestVersionLabel(t *testing.T) {
 		"version/unsupported": "Server: Version: 1.2.3-toto",
 	} {
 		clt, ctx := makeContext()
-		operation := versionLabel{}
+		operation := versionLabelOperation{}
 
-		issue := test.NewIssueBuilder(test.IssueNumber).Body(body).Value
+		issue := test.NewIssueBuilder(test.IssueNumber).Body(body).Item()
 		clt.MockIssues.
 			On("AddLabelsToIssue", ctx.Username, ctx.Repository, test.IssueNumber, []string{expected}).
 			Return([]github.Label{github.Label{Name: test.MakeString(expected)}}, nil, nil)
@@ -50,14 +50,14 @@ func TestVersionLabel(t *testing.T) {
 
 func TestVersionLabelRejects(t *testing.T) {
 	_, ctx := makeContext()
-	operation := versionLabel{}
+	operation := versionLabelOperation{}
 
 	for _, body := range []string{
 		"Body",
 		"1.11.0",
 		"Version: 1.12.0",
 	} {
-		issue := test.NewIssueBuilder(test.IssueNumber).Body(body).Value
+		issue := test.NewIssueBuilder(test.IssueNumber).Body(body).Item()
 		if res, _ := operation.Filter(ctx, issue); res != operations.Reject {
 			t.Fatalf("Unexpected result %v when filtering %q", res, body)
 		}

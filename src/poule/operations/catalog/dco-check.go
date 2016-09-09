@@ -3,9 +3,11 @@ package catalog
 import (
 	"fmt"
 	"log"
-	"poule/operations"
 	"regexp"
 	"strings"
+
+	"poule/gh"
+	"poule/operations"
 
 	"github.com/google/go-github/github"
 	"github.com/mitchellh/mapstructure"
@@ -24,55 +26,55 @@ func init() {
 
 type dcoCheckDescriptor struct{}
 
-func (d *dcoCheckDescriptor) Description() string {
-	return "Check DCO on pull requests"
-}
-
-func (d *dcoCheckDescriptor) Flags() []cli.Flag {
-	return []cli.Flag{
-		cli.StringFlag{
-			Name:  "unsigned-label",
-			Usage: "label to add to unsigned pull requests",
-			Value: defaultUnsignedLabel,
+func (d *dcoCheckDescriptor) CommandLineDescription() CommandLineDescription {
+	return CommandLineDescription{
+		Name:        "dco-check",
+		Description: "Check DCO on pull requests",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "unsigned-label",
+				Usage: "label to add to unsigned pull requests",
+				Value: defaultUnsignedLabel,
+			},
 		},
 	}
 }
 
-func (d *dcoCheckDescriptor) Name() string {
-	return "dco-check"
-}
-
-func (d *dcoCheckDescriptor) OperationFromCli(c *cli.Context) Operation {
-	return &dcoCheck{
+func (d *dcoCheckDescriptor) OperationFromCli(c *cli.Context) operations.Operation {
+	return &dcoCheckOperation{
 		unsignedLabel: c.String("unsigned-label"),
 	}
 }
 
-func (d *dcoCheckDescriptor) OperationFromConfig(c operations.Configuration) Operation {
-	dcoCheck := &dcoCheck{
+func (d *dcoCheckDescriptor) OperationFromConfig(c operations.Configuration) operations.Operation {
+	dcoCheckOperation := &dcoCheckOperation{
 		unsignedLabel: defaultUnsignedLabel,
 	}
 	if len(c) > 0 {
-		if err := mapstructure.Decode(c, &dcoCheck); err != nil {
+		if err := mapstructure.Decode(c, &dcoCheckOperation); err != nil {
 			log.Fatalf("Error creating operation from configuration: %v", err)
 		}
 	}
-	return dcoCheck
+	return dcoCheckOperation
 }
 
-type dcoCheck struct {
+type dcoCheckOperation struct {
 	unsignedLabel string `mapstructure:"unsigned-label"`
 }
 
-func (o *dcoCheck) Apply(c *operations.Context, pr *github.PullRequest, userData interface{}) error {
+func (o *dcoCheckOperation) Accepts() operations.AcceptedType {
+	return operations.PullRequests
+}
+
+func (o *dcoCheckOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
 	fnMapping := map[bool]func(*operations.Context, *github.PullRequest) error{
 		true:  o.applySigned,
 		false: o.applyUnsigned,
 	}
-	return fnMapping[userData.(bool)](c, pr)
+	return fnMapping[userData.(bool)](c, item.PullRequest())
 }
 
-func (o *dcoCheck) applySigned(c *operations.Context, pr *github.PullRequest) error {
+func (o *dcoCheckOperation) applySigned(c *operations.Context, pr *github.PullRequest) error {
 	// Remove the DCO unsigned label.
 	if err := toggleDCOLabel(c, pr, false, o.unsignedLabel); err != nil {
 		return err
@@ -89,7 +91,7 @@ func (o *dcoCheck) applySigned(c *operations.Context, pr *github.PullRequest) er
 	return nil
 }
 
-func (o *dcoCheck) applyUnsigned(c *operations.Context, pr *github.PullRequest) error {
+func (o *dcoCheckOperation) applyUnsigned(c *operations.Context, pr *github.PullRequest) error {
 	// Add the DCO unsigned label.
 	if err := toggleDCOLabel(c, pr, true, o.unsignedLabel); err != nil {
 		return err
@@ -112,7 +114,8 @@ func (o *dcoCheck) applyUnsigned(c *operations.Context, pr *github.PullRequest) 
 	return err
 }
 
-func (o *dcoCheck) Describe(c *operations.Context, pr *github.PullRequest, userData interface{}) string {
+func (o *dcoCheckOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
+	pr := item.PullRequest()
 	if isSigned := userData.(bool); isSigned {
 		return fmt.Sprintf("Pull request #%d is signed: label %q and explanation comment will be removed", *pr.Number, o.unsignedLabel)
 	} else {
@@ -120,8 +123,9 @@ func (o *dcoCheck) Describe(c *operations.Context, pr *github.PullRequest, userD
 	}
 }
 
-func (o *dcoCheck) Filter(c *operations.Context, pr *github.PullRequest) (operations.FilterResult, interface{}) {
+func (o *dcoCheckOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}) {
 	// Retrieve commits for that pull request.
+	pr := item.PullRequest()
 	commits, _, err := c.Client.PullRequests().ListCommits(c.Username, c.Repository, *pr.Number, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -142,7 +146,12 @@ func (o *dcoCheck) Filter(c *operations.Context, pr *github.PullRequest) (operat
 	return operations.Accept, isSigned
 }
 
-func (o *dcoCheck) ListOptions(c *operations.Context) *github.PullRequestListOptions {
+func (o *dcoCheckOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {
+	// dcoCheckOperation doesn't apply to GitHub issues.
+	return nil
+}
+
+func (o *dcoCheckOperation) PullRequestListOptions(c *operations.Context) *github.PullRequestListOptions {
 	return &github.PullRequestListOptions{
 		State: "open",
 		ListOptions: github.ListOptions{

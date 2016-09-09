@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"poule/gh"
 	"poule/operations"
 	"poule/utils"
 
@@ -12,45 +13,45 @@ import (
 )
 
 func init() {
-	registerOperation(&ciFailureLabelAuditDescriptor{})
+	registerOperation(&ciLabelAuditOperationDescriptor{})
 }
 
-type ciFailureLabelAuditDescriptor struct{}
+type ciLabelAuditOperationDescriptor struct{}
 
-func (d *ciFailureLabelAuditDescriptor) Description() string {
-	return "Audit CI failure labels"
+func (d *ciLabelAuditOperationDescriptor) CommandLineDescription() CommandLineDescription {
+	return CommandLineDescription{
+		Name:        "ci-label-audit",
+		Description: "Audit CI failure labels",
+	}
 }
 
-func (d *ciFailureLabelAuditDescriptor) Flags() []cli.Flag {
-	return nil
+func (d *ciLabelAuditOperationDescriptor) OperationFromCli(*cli.Context) operations.Operation {
+	return &ciLabelAuditOperation{}
 }
 
-func (d *ciFailureLabelAuditDescriptor) Name() string {
-	return "ci-label-audit"
+func (d *ciLabelAuditOperationDescriptor) OperationFromConfig(operations.Configuration) operations.Operation {
+	return &ciLabelAuditOperation{}
 }
 
-func (d *ciFailureLabelAuditDescriptor) OperationFromCli(*cli.Context) Operation {
-	return &ciFailureLabelAudit{}
-}
+type ciLabelAuditOperation struct{}
 
-func (d *ciFailureLabelAuditDescriptor) OperationFromConfig(operations.Configuration) Operation {
-	return &ciFailureLabelAudit{}
-}
-
-type ciFailureLabelAudit struct{}
-
-type ciFailureLabelAuditUserData struct {
+type ciLabelAuditOperationUserData struct {
 	hasFailures       bool
 	hasFailingCILabel bool
 }
 
-func (o *ciFailureLabelAudit) Apply(c *operations.Context, pr *github.PullRequest, userData interface{}) error {
-	// Apply is a no-op for the ciFailureLabelAudit.
+func (o *ciLabelAuditOperation) Accepts() operations.AcceptedType {
+	return operations.PullRequests
+}
+
+func (o *ciLabelAuditOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
+	// Apply is a no-op for the ciLabelAuditOperation.
 	return nil
 }
 
-func (o *ciFailureLabelAudit) Describe(c *operations.Context, pr *github.PullRequest, userData interface{}) string {
-	ud := userData.(ciFailureLabelAuditUserData)
+func (o *ciLabelAuditOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
+	pr := item.PullRequest()
+	ud := userData.(ciLabelAuditOperationUserData)
 	// Failing CI label but no CI failures: this is inconsistent.
 	if ud.hasFailingCILabel && !ud.hasFailures {
 		return fmt.Sprintf("PR#%d is labeled %q but has no failures", *pr.Number, utils.FailingCILabel)
@@ -63,8 +64,9 @@ func (o *ciFailureLabelAudit) Describe(c *operations.Context, pr *github.PullReq
 	return ""
 }
 
-func (o *ciFailureLabelAudit) Filter(c *operations.Context, pr *github.PullRequest) (operations.FilterResult, interface{}) {
+func (o *ciLabelAuditOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}) {
 	// Exclude all pull requests which cannot be merged (e.g., rebase needed).
+	pr := item.PullRequest()
 	if pr.Mergeable != nil && !*pr.Mergeable {
 		return operations.Reject, nil
 	}
@@ -85,14 +87,19 @@ func (o *ciFailureLabelAudit) Filter(c *operations.Context, pr *github.PullReque
 
 	// Include this pull request as part of the filter, and store the failures
 	// information as part of the user data.
-	userData := ciFailureLabelAuditUserData{
+	userData := ciLabelAuditOperationUserData{
 		hasFailures:       utils.HasFailures(latestStatuses),
 		hasFailingCILabel: utils.HasFailingCILabel(issue.Labels),
 	}
 	return operations.Accept, userData
 }
 
-func (o *ciFailureLabelAudit) ListOptions(c *operations.Context) *github.PullRequestListOptions {
+func (o *ciLabelAuditOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {
+	// ciLabelAuditOperation doesn't apply to GitHub issues.
+	return nil
+}
+
+func (o *ciLabelAuditOperation) PullRequestListOptions(c *operations.Context) *github.PullRequestListOptions {
 	return &github.PullRequestListOptions{
 		State: "open",
 		Base:  "master",

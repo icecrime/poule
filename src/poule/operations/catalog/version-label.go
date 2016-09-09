@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"poule/gh"
 	"poule/operations"
 
 	"github.com/google/go-github/github"
@@ -17,51 +18,58 @@ func init() {
 
 type versionLabelDescriptor struct{}
 
-func (d *versionLabelDescriptor) Description() string {
-	return "Apply version labels to issues"
+func (d *versionLabelDescriptor) CommandLineDescription() CommandLineDescription {
+	return CommandLineDescription{
+		Name:        "version-label",
+		Description: "Apply version labels to issues",
+	}
 }
 
-func (d *versionLabelDescriptor) Flags() []cli.Flag {
-	return nil
+func (d *versionLabelDescriptor) OperationFromCli(*cli.Context) operations.Operation {
+	return &versionLabelOperation{}
 }
 
-func (d *versionLabelDescriptor) Name() string {
-	return "version-label"
+func (d *versionLabelDescriptor) OperationFromConfig(operations.Configuration) operations.Operation {
+	return &versionLabelOperation{}
 }
 
-func (d *versionLabelDescriptor) OperationFromCli(*cli.Context) Operation {
-	return &versionLabel{}
+type versionLabelOperation struct{}
+
+func (o *versionLabelOperation) Accepts() operations.AcceptedType {
+	return operations.Issues
 }
 
-func (d *versionLabelDescriptor) OperationFromConfig(operations.Configuration) Operation {
-	return &versionLabel{}
-}
-
-type versionLabel struct{}
-
-func (o *versionLabel) Apply(c *operations.Context, issue *github.Issue, userData interface{}) error {
+func (o *versionLabelOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
+	issue := item.Issue()
 	_, _, err := c.Client.Issues().AddLabelsToIssue(c.Username, c.Repository, *issue.Number, []string{userData.(string)})
 	return err
 }
 
-func (o *versionLabel) Describe(c *operations.Context, issue *github.Issue, userData interface{}) string {
+func (o *versionLabelOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
+	issue := item.Issue()
 	return fmt.Sprintf("Adding label %q to issue #%d", userData.(string), *issue.Number)
 }
 
-func (o *versionLabel) Filter(c *operations.Context, issue *github.Issue) (operations.FilterResult, interface{}) {
+func (o *versionLabelOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}) {
+	issue := item.Issue()
 	if b, label := extractVersionLabels(issue); b {
 		return operations.Accept, label
 	}
 	return operations.Reject, nil
 }
 
-func (o *versionLabel) ListOptions(c *operations.Context) *github.IssueListByRepoOptions {
+func (o *versionLabelOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {
 	return &github.IssueListByRepoOptions{
 		State: "open",
 		ListOptions: github.ListOptions{
 			PerPage: 200,
 		},
 	}
+}
+
+func (o *versionLabelOperation) PullRequestListOptions(c *operations.Context) *github.PullRequestListOptions {
+	// versionLabelOperation doesn't apply to GitHub pull requests.
+	return nil
 }
 
 func extractVersionLabels(issue *github.Issue) (bool, string) {

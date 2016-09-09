@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"poule/gh"
 	"poule/operations"
 	"poule/utils"
 
@@ -23,31 +24,26 @@ func init() {
 
 type prRebuildDescriptor struct{}
 
-func (d *prRebuildDescriptor) Description() string {
-	return "Rebuild failed pull requests"
-}
-
-func (d *prRebuildDescriptor) Flags() []cli.Flag {
-	return nil
-}
-
-func (d *prRebuildDescriptor) Name() string {
-	return "rebuild"
+func (d *prRebuildDescriptor) CommandLineDescription() CommandLineDescription {
+	return CommandLineDescription{
+		Name:        "rebuild",
+		Description: "Rebuild failed pull requests",
+	}
 }
 
 func (d *prRebuildDescriptor) CommandFlags() []cli.Flag {
 	return []cli.Flag{}
 }
 
-func (d *prRebuildDescriptor) OperationFromCli(c *cli.Context) Operation {
-	return &prRebuild{
+func (d *prRebuildDescriptor) OperationFromCli(c *cli.Context) operations.Operation {
+	return &prRebuildOperation{
 		Builder:        rebuildPR,
 		Configurations: c.Args(),
 	}
 }
 
-func (d *prRebuildDescriptor) OperationFromConfig(c operations.Configuration) Operation {
-	operation := &prRebuild{
+func (d *prRebuildDescriptor) OperationFromConfig(c operations.Configuration) operations.Operation {
+	operation := &prRebuildOperation{
 		Builder: rebuildPR,
 	}
 	if err := mapstructure.Decode(c, &operation); err != nil {
@@ -56,12 +52,17 @@ func (d *prRebuildDescriptor) OperationFromConfig(c operations.Configuration) Op
 	return operation
 }
 
-type prRebuild struct {
+type prRebuildOperation struct {
 	Builder        func(pr *github.PullRequest, context string) error
 	Configurations []string `mapstructure:"configurations"`
 }
 
-func (o *prRebuild) Apply(c *operations.Context, pr *github.PullRequest, userData interface{}) error {
+func (o *prRebuildOperation) Accepts() operations.AcceptedType {
+	return operations.PullRequests
+}
+
+func (o *prRebuildOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
+	pr := item.PullRequest()
 	for _, context := range userData.([]string) {
 		if err := o.Builder(pr, context); err != nil {
 			return fmt.Errorf("error rebuilding pull request %d: %v", *pr.Number, err)
@@ -70,7 +71,8 @@ func (o *prRebuild) Apply(c *operations.Context, pr *github.PullRequest, userDat
 	return nil
 }
 
-func (o *prRebuild) Describe(c *operations.Context, pr *github.PullRequest, userData interface{}) string {
+func (o *prRebuildOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
+	pr := item.PullRequest()
 	contexts := userData.([]string)
 	if len(contexts) == 0 {
 		return ""
@@ -78,9 +80,10 @@ func (o *prRebuild) Describe(c *operations.Context, pr *github.PullRequest, user
 	return fmt.Sprintf("Rebuilding pull request #%d for %s", *pr.Number, strings.Join(contexts, ", "))
 }
 
-func (o *prRebuild) Filter(c *operations.Context, pr *github.PullRequest) (operations.FilterResult, interface{}) {
+func (o *prRebuildOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}) {
 	// Fetch the issue information for that pull request: that's the only way
 	// to retrieve the labels.
+	pr := item.PullRequest()
 	issue, _, err := c.Client.Issues().Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
 	if err != nil {
 		log.Fatalf("Error getting issue %d: %v", *pr.Number, err)
@@ -108,7 +111,12 @@ func (o *prRebuild) Filter(c *operations.Context, pr *github.PullRequest) (opera
 	return operations.Accept, contexts
 }
 
-func (o *prRebuild) ListOptions(c *operations.Context) *github.PullRequestListOptions {
+func (o *prRebuildOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {
+	// prRebuildOperation doesn't apply to GitHub issues.
+	return nil
+}
+
+func (o *prRebuildOperation) PullRequestListOptions(c *operations.Context) *github.PullRequestListOptions {
 	return &github.PullRequestListOptions{
 		State: "open",
 		Base:  "master",

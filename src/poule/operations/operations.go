@@ -43,43 +43,50 @@ const (
 // configuration.
 type Configuration map[string]interface{}
 
-type IssueOperation interface {
-	// Apply applies the operation to the GitHub issue.
-	Apply(*Context, *github.Issue, interface{}) error
+// AcceptedType describes the combination of GitHub item types accepted by an
+// operation.
+type AcceptedType int
+
+const (
+	// Issues means that the operation can apply to issues.
+	Issues AcceptedType = 1 << iota
+
+	// PullRequests means that the operation can apply to pull requests.
+	PullRequests
+
+	// All means that the operation can apply to both issues and pull requests.
+	All = Issues | PullRequests
+)
+
+// Operation is the central interface: it encapsulates an action over GitHub
+// items (either issues, pull requests, or both).
+type Operation interface {
+	// Accepts returns the combination of GitHub item types that the operation
+	// can be applied to.
+	Accepts() AcceptedType
+
+	// Apply applies the operation to the GitHub item.
+	Apply(*Context, gh.Item, interface{}) error
 
 	// Describe returns a human-readable description of calling Apply on the
-	// specified issue with the specified context.
-	Describe(*Context, *github.Issue, interface{}) string
+	// specified item with the specified context.
+	Describe(*Context, gh.Item, interface{}) string
 
 	// Filter returns whether that operation should apply to the specified
-	// issue, and an operation specific user data that is guaranteed to be
+	// item, and an operation specific user data that is guaranteed to be
 	// passed on Apply and Describe invocation.
-	Filter(*Context, *github.Issue) (FilterResult, interface{})
+	Filter(*Context, gh.Item) (FilterResult, interface{})
 
-	// ListOptions returns the global filtering options to apply when listing
-	// issues for the specified context.
-	ListOptions(*Context) *github.IssueListByRepoOptions
+	// IssueListOptions returns the global filtering options to apply when
+	// listing issues for the specified context.
+	IssueListOptions(*Context) *github.IssueListByRepoOptions
+
+	// PullRequestListOptions returns the global filtering options to apply
+	// when listing pull requests for the specified context.
+	PullRequestListOptions(*Context) *github.PullRequestListOptions
 }
 
-type PullRequestOperation interface {
-	// Apply applies the operation to the GitHub pull request.
-	Apply(*Context, *github.PullRequest, interface{}) error
-
-	// Describe returns a human-readable description of calling Apply on the
-	// specified pull request with the specified context.
-	Describe(*Context, *github.PullRequest, interface{}) string
-
-	// Filter returns whether that operation should apply to the specified pull
-	// request, and an operation specific user data that is guaranteed to be
-	// passed on Apply and Describe invocation.
-	Filter(*Context, *github.PullRequest) (FilterResult, interface{})
-
-	// ListOptions returns the global filtering options to apply when listing
-	// pull requests for the specified context.
-	ListOptions(*Context) *github.PullRequestListOptions
-}
-
-func RunIssueOperation(c *configuration.Config, op IssueOperation) {
+func RunOnIssues(c *configuration.Config, op Operation) {
 	context := Context{}
 	context.Client = gh.MakeClient(c)
 	context.Username, context.Repository = gh.GetRepository(c.Repository)
@@ -87,7 +94,7 @@ func RunIssueOperation(c *configuration.Config, op IssueOperation) {
 	for page := 1; page != 0; {
 		// Retrieve the list options from the operation, and override the page
 		// number with the current pointer.
-		listOptions := op.ListOptions(&context)
+		listOptions := op.IssueListOptions(&context)
 		listOptions.ListOptions.Page = page
 
 		// List all issues for that repository with the specific settings.
@@ -98,13 +105,14 @@ func RunIssueOperation(c *configuration.Config, op IssueOperation) {
 
 		// Handle each issue, filtering them using the operation first.
 		for _, issue := range issues {
-			switch filterResult, userdata := op.Filter(&context, &issue); filterResult {
+			item := gh.MakeItem(&issue)
+			switch filterResult, userdata := op.Filter(&context, item); filterResult {
 			case Accept:
-				if s := op.Describe(&context, &issue, userdata); s != "" {
+				if s := op.Describe(&context, item, userdata); s != "" {
 					log.Printf(s)
 				}
 				if !utils.IsDryRun(c) {
-					if err := op.Apply(&context, &issue, userdata); err != nil {
+					if err := op.Apply(&context, item, userdata); err != nil {
 						log.Printf("Error applying operation on issue %d: %v", *issue.Number, err)
 					}
 				}
@@ -123,7 +131,7 @@ func RunIssueOperation(c *configuration.Config, op IssueOperation) {
 	}
 }
 
-func RunPullRequestOperation(c *configuration.Config, op PullRequestOperation) {
+func RunOnPullRequests(c *configuration.Config, op Operation) {
 	context := Context{}
 	context.Client = gh.MakeClient(c)
 	context.Username, context.Repository = gh.GetRepository(c.Repository)
@@ -131,7 +139,7 @@ func RunPullRequestOperation(c *configuration.Config, op PullRequestOperation) {
 	for page := 1; page != 0; {
 		// Retrieve the list options from the operation, and override the page
 		// number with the current pointer.
-		listOptions := op.ListOptions(&context)
+		listOptions := op.PullRequestListOptions(&context)
 		listOptions.ListOptions.Page = page
 
 		// List all issues for that repository with the specific settings.
@@ -142,14 +150,15 @@ func RunPullRequestOperation(c *configuration.Config, op PullRequestOperation) {
 
 		// Handle each issue, filtering them using the operation first.
 		for _, pr := range prs {
-			switch filterResult, userdata := op.Filter(&context, &pr); filterResult {
+			item := gh.MakeItem(&pr)
+			switch filterResult, userdata := op.Filter(&context, item); filterResult {
 			case Accept:
-				if s := op.Describe(&context, &pr, userdata); s != "" {
+				if s := op.Describe(&context, item, userdata); s != "" {
 					log.Printf(s)
 				}
 
 				if !utils.IsDryRun(c) {
-					if err := op.Apply(&context, &pr, userdata); err != nil {
+					if err := op.Apply(&context, item, userdata); err != nil {
 						log.Printf("Error applying operation on pull request %d: %v", *pr.Number, err)
 					}
 				}
