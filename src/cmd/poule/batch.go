@@ -8,6 +8,7 @@ import (
 	"poule/configuration"
 	"poule/operations"
 	"poule/operations/catalog"
+	"poule/operations/catalog/settings"
 
 	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
@@ -32,15 +33,22 @@ func doBatchCommand(c *cli.Context) {
 			log.Fatalf("Failed to read YAML file %q: %v", arg, err)
 		}
 
-		// Execute each command described as part of the YAML file.
+		// Read the global configuration flags, and override them with the
+		// specialized flags defined in the YAML configuration file.
 		config := configuration.FromGlobalFlags(c)
 		batchConfig.Override(config)
+
+		// Execute each command described as part of the YAML file.
 		for _, operationConfig := range batchConfig.Operations {
 			descriptor, ok := catalog.ByNameIndex[operationConfig.Type]
 			if !ok {
-				log.Fatalf("Unknown operation %q in file %q", operationConfig.Type)
+				log.Fatalf("Unknown operation %q in file %q", operationConfig.Type, arg)
 			}
-			runSingleOperation(config, descriptor.OperationFromConfig(operationConfig.Settings))
+			itemFilters, err := settings.ParseConfigurationFilters(operationConfig.Filters)
+			if err != nil {
+				log.Fatalf("Failed to parse filtering settings: %v", err)
+			}
+			runSingleOperation(config, descriptor.OperationFromConfig(operationConfig.Settings), itemFilters)
 		}
 	}
 }
@@ -56,6 +64,7 @@ type batchConfiguration struct {
 
 type operationConfiguration struct {
 	Type     string                   `yaml:"type"`
+	Filters  map[string][]string      `yaml:"filters"`
 	Settings operations.Configuration `yaml:"settings"`
 }
 

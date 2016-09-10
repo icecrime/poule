@@ -22,13 +22,10 @@ func init() {
 type pruneDescriptor struct{}
 
 type pruneConfig struct {
-	Action            string                 `mapstructure:"action"`
-	Filters           pruneFilterDescription `mapstructure:"filters"`
-	GracePeriod       string                 `mapstructure:"grace-period"`
-	OutdatedThreshold string                 `mapstructure:"outdated-threshold"`
+	Action            string `mapstructure:"action"`
+	GracePeriod       string `mapstructure:"grace-period"`
+	OutdatedThreshold string `mapstructure:"outdated-threshold"`
 }
-
-type pruneFilterDescription map[string][]string
 
 func (d *pruneDescriptor) CommandLineDescription() CommandLineDescription {
 	return CommandLineDescription{
@@ -39,10 +36,6 @@ func (d *pruneDescriptor) CommandLineDescription() CommandLineDescription {
 				Name:  "action",
 				Usage: "action to take for outdated issues",
 				Value: "ping",
-			},
-			cli.StringSliceFlag{
-				Name:  "filter",
-				Usage: "filter based on issue attributes",
 			},
 			cli.StringFlag{
 				Name:  "grace-period",
@@ -61,16 +54,8 @@ func (d *pruneDescriptor) CommandLineDescription() CommandLineDescription {
 func (d *pruneDescriptor) OperationFromCli(c *cli.Context) operations.Operation {
 	pruneConfig := &pruneConfig{
 		Action:            c.String("action"),
-		Filters:           pruneFilterDescription{},
 		GracePeriod:       c.String("grace-period"),
 		OutdatedThreshold: c.String("threshold"),
-	}
-	for _, filter := range c.StringSlice("filter") {
-		s := strings.SplitN(filter, ":", 2)
-		if len(s) != 2 {
-			log.Fatalf("Invalid filter format %q", filter)
-		}
-		pruneConfig.Filters[s[0]] = strings.Split(s[1], ",")
 	}
 	return d.makeOperation(pruneConfig)
 }
@@ -91,9 +76,6 @@ func (d *pruneDescriptor) makeOperation(config *pruneConfig) operations.Operatio
 	if operation.action, err = parseAction(config.Action); err != nil {
 		log.Fatal(err)
 	}
-	if operation.filters, err = parseFilters(config.Filters); err != nil {
-		log.Fatal(err)
-	}
 	if operation.gracePeriod, err = utils.ParseExtDuration(config.GracePeriod); err != nil {
 		log.Fatal(err)
 	}
@@ -105,7 +87,6 @@ func (d *pruneDescriptor) makeOperation(config *pruneConfig) operations.Operatio
 
 type pruneOperation struct {
 	action            string
-	filters           []utils.IssueFilter
 	gracePeriod       utils.ExtDuration
 	outdatedThreshold utils.ExtDuration
 }
@@ -149,16 +130,9 @@ func (o *pruneOperation) Describe(c *operations.Context, item gh.Item, userData 
 }
 
 func (o *pruneOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}) {
-	// Apply filters, if any.
-	issue := item.Issue()
-	for _, filter := range o.filters {
-		if !filter.ApplyIssue(issue) {
-			return operations.Reject, nil
-		}
-	}
-
 	// Retrieve comments for that issue since our threshold plus our grace
 	// period plus one day.
+	issue := item.Issue()
 	comments, _, err := c.Client.Issues().ListComments(c.Username, c.Repository, *issue.Number, &github.IssueListCommentsOptions{
 		Since: time.Now().Add(-1*o.outdatedThreshold.Duration()).Add(-1*o.gracePeriod.Duration()).AddDate(0, 0, -1),
 		ListOptions: github.ListOptions{
@@ -241,16 +215,4 @@ func parseAction(action string) (string, error) {
 		return "", fmt.Errorf("Invalid action %q", action)
 	}
 	return action, nil
-}
-
-func parseFilters(filters map[string][]string) ([]utils.IssueFilter, error) {
-	issueFilters := []utils.IssueFilter{}
-	for filterType, value := range filters {
-		f, err := utils.MakeIssueFilter(filterType, strings.Join(value, ","))
-		if err != nil {
-			return []utils.IssueFilter{}, err
-		}
-		issueFilters = append(issueFilters, f)
-	}
-	return issueFilters, nil
 }

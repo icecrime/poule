@@ -9,16 +9,34 @@ operations:
 
     # Functionally equivalent to running:
     #
-    #   $> poule prune --action=ping \
-    #                  --threshold=3m --grace-period=2w \
-    #                  --filter ~label=kind/enhancement,kind/feature
+    #   $> poule --filter is:issue label label \
+    #            --match aufs:"area/storage/aufs"
+    #            --match devicemapper:"area/storage/devicemapper"
+    #            --match overlay:"area/storage/overlay"
+    #
+    - type: label
+      filters: {
+          ~labels:            [ kind/enhancement, kind/feature ]
+      }
+      settings: {
+          matches: {
+              "aufs":         "area/storage/aufs",
+              "devicemapper": "area/storage/devicemapper",
+              "overlay":      "area/storage/overlay"
+          }
+      }
+
+    # Functionally equivalent to running:
+    #
+    #   $> poule --filter ~label=kind/enhancement,kind/feature prune\
+    #            --threshold=3m --grace-period=2w
     #
     - type: prune
+      filters: {
+          ~labels:            [ kind/enhancement, kind/feature ]
+      }
       settings: {
           action:             ping,
-          filters: {
-              ~labels:        [ kind/enhancement, kind/feature ]
-          },
           grace-period:       2w,
           outdated-threshold: 3m
       }

@@ -86,7 +86,7 @@ type Operation interface {
 	PullRequestListOptions(*Context) *github.PullRequestListOptions
 }
 
-func RunOnIssues(c *configuration.Config, op Operation) {
+func RunOnIssues(c *configuration.Config, op Operation, filters []*utils.Filter) {
 	context := Context{}
 	context.Client = gh.MakeClient(c)
 	context.Username, context.Repository = gh.GetRepository(c.Repository)
@@ -106,6 +106,15 @@ func RunOnIssues(c *configuration.Config, op Operation) {
 		// Handle each issue, filtering them using the operation first.
 		for _, issue := range issues {
 			item := gh.MakeItem(&issue)
+
+			// Apply global filters to the item.
+			for _, filter := range filters {
+				if filter.Apply(item) == false {
+					continue
+				}
+			}
+
+			// Apply operation-specific filtering, and execute.
 			switch filterResult, userdata := op.Filter(&context, item); filterResult {
 			case Accept:
 				if s := op.Describe(&context, item, userdata); s != "" {
@@ -131,7 +140,7 @@ func RunOnIssues(c *configuration.Config, op Operation) {
 	}
 }
 
-func RunOnPullRequests(c *configuration.Config, op Operation) {
+func RunOnPullRequests(c *configuration.Config, op Operation, filters []*utils.Filter) {
 	context := Context{}
 	context.Client = gh.MakeClient(c)
 	context.Username, context.Repository = gh.GetRepository(c.Repository)
@@ -151,6 +160,15 @@ func RunOnPullRequests(c *configuration.Config, op Operation) {
 		// Handle each issue, filtering them using the operation first.
 		for _, pr := range prs {
 			item := gh.MakeItem(&pr)
+
+			// Apply global filters to the item.
+			for _, filter := range filters {
+				if filter.Apply(item) == false {
+					continue
+				}
+			}
+
+			// Apply operation-specific filtering, and execute.
 			switch filterResult, userdata := op.Filter(&context, item); filterResult {
 			case Accept:
 				if s := op.Describe(&context, item, userdata); s != "" {

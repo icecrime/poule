@@ -5,18 +5,44 @@ import (
 	"strconv"
 	"strings"
 
+	"poule/gh"
+
 	"github.com/google/go-github/github"
 )
 
-type IssueFilter interface {
+type Filter struct {
+	Impl interface{}
+}
+
+func (f *Filter) Apply(item gh.Item) bool {
+	switch {
+	case item.IsIssue():
+		if f, ok := f.Impl.(issueFilter); ok {
+			return f.ApplyIssue(item.Issue())
+		}
+	case item.IsPullRequest():
+		if f, ok := f.Impl.(pullRequestFilter); ok {
+			return f.ApplyPullRequest(item.PullRequest())
+		}
+	default:
+		panic("unreachable")
+	}
+	return true
+}
+
+type issueFilter interface {
 	ApplyIssue(*github.Issue) bool
 }
 
-func MakeIssueFilter(filterType, value string) (IssueFilter, error) {
-	typeMapping := map[string]func(string) (IssueFilter, error){
+type pullRequestFilter interface {
+	ApplyPullRequest(*github.PullRequest) bool
+}
+
+func MakeFilter(filterType, value string) (*Filter, error) {
+	typeMapping := map[string]func(string) (*Filter, error){
 		"assigned": makeAssignedFilter,
-		"comments": asIssueFilter(makeCommentsFilter),
-		"is":       asIssueFilter(makeIsFilter),
+		"comments": makeCommentsFilter,
+		"is":       makeIsFilter,
 		"labels":   makeWithLabelsFilter,
 		"~labels":  makeWithoutLabelsFilter,
 	}
@@ -26,38 +52,17 @@ func MakeIssueFilter(filterType, value string) (IssueFilter, error) {
 	return nil, fmt.Errorf("Unknown issue filter type %q", filterType)
 }
 
-type PullRequestFilter interface {
-	ApplyPullRequest(*github.PullRequest) bool
-}
-
-func MakePullRequestFilter(filterType, value string) (PullRequestFilter, error) {
-	typeMapping := map[string]func(string) (PullRequestFilter, error){
-		"comments": asPullRequestFilter(makeCommentsFilter),
-		"is":       asPullRequestFilter(makeIsFilter),
-	}
-	if constructor, ok := typeMapping[filterType]; ok {
-		return constructor(value)
-	}
-	return nil, fmt.Errorf("Unknown pull request filter type %q", filterType)
-}
-
-// CombinedFilter can apply to both issues and pull requests.
-type CombinedFilter interface {
-	IssueFilter
-	PullRequestFilter
-}
-
 // AssignedFilter filters issues based on whether they are assigned or not.
 type AssignedFilter struct {
 	isAssigned bool
 }
 
-func makeAssignedFilter(value string) (IssueFilter, error) {
+func makeAssignedFilter(value string) (*Filter, error) {
 	b, err := strconv.ParseBool(value)
 	if err != nil {
 		return nil, fmt.Errorf("Invalid value %q for \"assigned\" filter", value)
 	}
-	return AssignedFilter{b}, nil
+	return asFilter(AssignedFilter{b}), nil
 }
 
 func (f AssignedFilter) ApplyIssue(issue *github.Issue) bool {
@@ -69,7 +74,7 @@ type CommentsFilter struct {
 	predicate func(int) bool
 }
 
-func makeCommentsFilter(value string) (CombinedFilter, error) {
+func makeCommentsFilter(value string) (*Filter, error) {
 	var count int
 	var operation rune
 	if n, err := fmt.Sscanf(value, "%c%d", &operation, &count); n != 2 || err != nil {
@@ -90,7 +95,7 @@ func makeCommentsFilter(value string) (CombinedFilter, error) {
 	default:
 		return nil, fmt.Errorf("Bad operator %c for \"comments\" filter", operation)
 	}
-	return CommentsFilter{predicate}, nil
+	return asFilter(CommentsFilter{predicate}), nil
 }
 
 func (f CommentsFilter) ApplyIssue(issue *github.Issue) bool {
@@ -103,15 +108,15 @@ func (f CommentsFilter) ApplyPullRequest(pullRequest *github.PullRequest) bool {
 
 // Is filters issues and pull requests based on their type.
 type IsFilter struct {
-	isPullRequest bool
+	PullRequestOnly bool
 }
 
-func makeIsFilter(value string) (CombinedFilter, error) {
+func makeIsFilter(value string) (*Filter, error) {
 	switch value {
 	case "pr":
-		return IsFilter{isPullRequest: true}, nil
+		return asFilter(IsFilter{PullRequestOnly: true}), nil
 	case "issue":
-		return IsFilter{isPullRequest: false}, nil
+		return asFilter(IsFilter{PullRequestOnly: false}), nil
 	default:
 		return nil, fmt.Errorf("Invalid value %q for \"is\" filter", value)
 	}
@@ -120,13 +125,13 @@ func makeIsFilter(value string) (CombinedFilter, error) {
 func (f IsFilter) ApplyIssue(issue *github.Issue) bool {
 	// We're called on an issue: filter passes unless configured to accept pull
 	// requests, and if the issue isn't really a pull request.
-	return !f.isPullRequest && (issue.PullRequestLinks == nil)
+	return !f.PullRequestOnly && (issue.PullRequestLinks == nil)
 }
 
 func (f IsFilter) ApplyPullRequest(pullRequest *github.PullRequest) bool {
 	// We're called on a pull request: filter passes if configured to accept
 	// pull requests.
-	return f.isPullRequest
+	return f.PullRequestOnly
 }
 
 // WithLabelsFilter filters issues based on whether they bear all of the
@@ -135,9 +140,9 @@ type WithLabelsFilter struct {
 	labels []string
 }
 
-func makeWithLabelsFilter(value string) (IssueFilter, error) {
+func makeWithLabelsFilter(value string) (*Filter, error) {
 	labels := strings.Split(value, ",")
-	return WithLabelsFilter{labels}, nil
+	return asFilter(WithLabelsFilter{labels}), nil
 }
 
 func (f WithLabelsFilter) ApplyIssue(issue *github.Issue) bool {
@@ -150,9 +155,9 @@ type WithoutLabelsFilter struct {
 	labels []string
 }
 
-func makeWithoutLabelsFilter(value string) (IssueFilter, error) {
+func makeWithoutLabelsFilter(value string) (*Filter, error) {
 	labels := strings.Split(value, ",")
-	return WithoutLabelsFilter{labels}, nil
+	return asFilter(WithoutLabelsFilter{labels}), nil
 }
 
 func (f WithoutLabelsFilter) ApplyIssue(issue *github.Issue) bool {
@@ -186,18 +191,9 @@ func hasAllLabels(labels []string, issueLabels []github.Label) bool {
 	return true
 }
 
-// Type-casting utilities
-
-func asIssueFilter(fn func(string) (CombinedFilter, error)) func(string) (IssueFilter, error) {
-	return func(value string) (IssueFilter, error) {
-		f, err := fn(value)
-		return f.(IssueFilter), err
-	}
-}
-
-func asPullRequestFilter(fn func(string) (CombinedFilter, error)) func(string) (PullRequestFilter, error) {
-	return func(value string) (PullRequestFilter, error) {
-		f, err := fn(value)
-		return f.(PullRequestFilter), err
+// Type conversion utility.
+func asFilter(impl interface{}) *Filter {
+	return &Filter{
+		Impl: impl,
 	}
 }

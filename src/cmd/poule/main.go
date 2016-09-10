@@ -7,6 +7,8 @@ import (
 	"poule/configuration"
 	"poule/operations"
 	"poule/operations/catalog"
+	"poule/operations/catalog/settings"
+	"poule/utils"
 
 	"github.com/urfave/cli"
 )
@@ -33,23 +35,45 @@ func main() {
 }
 
 func makeCommand(descriptor catalog.OperationDescriptor) cli.Command {
-	cliDescription := descriptor.CommandLineDescription()
+	clidesc := descriptor.CommandLineDescription()
 	return cli.Command{
 		Category: "Operations",
-		Flags:    cliDescription.Flags,
-		Name:     cliDescription.Name,
-		Usage:    cliDescription.Description,
+		Flags:    append(clidesc.Flags, settings.FilteringFlag),
+		Name:     clidesc.Name,
+		Usage:    clidesc.Description,
 		Action: func(c *cli.Context) {
-			runSingleOperation(configuration.FromGlobalFlags(c), descriptor.OperationFromCli(c))
+			f, err := settings.ParseCliFilters(c)
+			if err != nil {
+				log.Fatalf("Error parsing CLI: %v", err)
+			}
+			runSingleOperation(configuration.FromGlobalFlags(c), descriptor.OperationFromCli(c), f)
 		},
 	}
 }
 
-func runSingleOperation(c *configuration.Config, op operations.Operation) {
-	if op.Accepts()&operations.Issues == operations.Issues {
-		operations.RunOnIssues(c, op)
+func runSingleOperation(c *configuration.Config, op operations.Operation, filters []*utils.Filter) {
+	if filterIncludesIssues(filters) && op.Accepts()&operations.Issues == operations.Issues {
+		operations.RunOnIssues(c, op, filters)
 	}
-	if op.Accepts()&operations.PullRequests == operations.PullRequests {
-		operations.RunOnPullRequests(c, op)
+	if filterIncludesPullRequests(filters) && op.Accepts()&operations.PullRequests == operations.PullRequests {
+		operations.RunOnPullRequests(c, op, filters)
 	}
+}
+
+func filterIncludesIssues(filters []*utils.Filter) bool {
+	for _, filter := range filters {
+		if f, ok := filter.Impl.(utils.IsFilter); ok && f.PullRequestOnly {
+			return false
+		}
+	}
+	return true
+}
+
+func filterIncludesPullRequests(filters []*utils.Filter) bool {
+	for _, filter := range filters {
+		if f, ok := filter.Impl.(utils.IsFilter); ok && !f.PullRequestOnly {
+			return false
+		}
+	}
+	return true
 }
