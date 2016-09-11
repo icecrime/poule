@@ -9,7 +9,6 @@ import (
 	"poule/operations"
 	"poule/operations/catalog"
 	"poule/operations/catalog/settings"
-	"poule/utils"
 
 	"github.com/urfave/cli"
 )
@@ -68,7 +67,7 @@ func executeSingleOperation(c *cli.Context, descriptor catalog.OperationDescript
 	return runSingleOperation(config, op, f)
 }
 
-func runSingleOperation(c *configuration.Config, op operations.Operation, filters []*utils.Filter) error {
+func runSingleOperation(c *configuration.Config, op operations.Operation, filters []*settings.Filter) error {
 	if filterIncludesIssues(filters) && op.Accepts()&operations.Issues == operations.Issues {
 		if err := operations.Run(c, op, &operations.IssueRunner{}, filters); err != nil {
 			return err
@@ -83,18 +82,18 @@ func runSingleOperation(c *configuration.Config, op operations.Operation, filter
 	return nil
 }
 
-func filterIncludesIssues(filters []*utils.Filter) bool {
+func filterIncludesIssues(filters []*settings.Filter) bool {
 	for _, filter := range filters {
-		if f, ok := filter.Impl.(utils.IsFilter); ok && f.PullRequestOnly {
+		if f, ok := filter.Strategy.(settings.IsFilter); ok && f.PullRequestOnly {
 			return false
 		}
 	}
 	return true
 }
 
-func filterIncludesPullRequests(filters []*utils.Filter) bool {
+func filterIncludesPullRequests(filters []*settings.Filter) bool {
 	for _, filter := range filters {
-		if f, ok := filter.Impl.(utils.IsFilter); ok && !f.PullRequestOnly {
+		if f, ok := filter.Strategy.(settings.IsFilter); ok && !f.PullRequestOnly {
 			return false
 		}
 	}

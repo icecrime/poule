@@ -8,9 +8,9 @@ import (
 	"os"
 	"strings"
 
+	"poule/configuration"
 	"poule/gh"
 	"poule/operations"
-	"poule/utils"
 
 	"github.com/google/go-github/github"
 	"github.com/mitchellh/mapstructure"
@@ -94,7 +94,7 @@ func (o *prRebuildOperation) Filter(c *operations.Context, item gh.Item) (operat
 	}
 
 	// Skip all pull requests which are known to fail CI.
-	if utils.HasFailingCILabel(issue.Labels) {
+	if gh.HasFailingCILabel(issue.Labels) {
 		return operations.Reject, nil, nil
 	}
 
@@ -103,7 +103,7 @@ func (o *prRebuildOperation) Filter(c *operations.Context, item gh.Item) (operat
 	if err != nil {
 		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve statuses for pull request #%d", *pr.Number)
 	}
-	latestStatuses := utils.GetLatestStatuses(repoStatuses)
+	latestStatuses := gh.GetLatestStatuses(repoStatuses)
 
 	// Gather all contexts that need rebuilding.
 	contexts := []string{}
@@ -141,7 +141,7 @@ func rebuildPR(pr *github.PullRequest, context string) (err error) {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", utils.BaseUrl, bytes.NewBuffer(data))
+	req, err := http.NewRequest("POST", configuration.JenkinsBaseUrl, bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func rebuildPR(pr *github.PullRequest, context string) (err error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 204 {
-		return errors.Errorf("requesting %s for PR %d for %s returned status code: %d: make sure the repo allows builds.", utils.BaseUrl, *pr.Number, *pr.Base.Repo.FullName, resp.StatusCode)
+		return errors.Errorf("requesting %s for PR %d for %s returned status code: %d: make sure the repo allows builds.", configuration.JenkinsBaseUrl, *pr.Number, *pr.Base.Repo.FullName, resp.StatusCode)
 	}
 	return nil
 }

@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
+	"poule/configuration"
 	"poule/gh"
 	"poule/operations"
 	"poule/test"
-	"poule/utils"
 
 	"github.com/google/go-github/github"
 	"github.com/stretchr/testify/mock"
@@ -87,7 +87,7 @@ func TestRebuildSkipFailing(t *testing.T) {
 	operation, _ := makeRebuildOperation([]string{"test"})
 
 	// Create test pull request and related issue object.
-	issue := test.NewIssueBuilder(test.IssueNumber).Labels([]string{utils.FailingCILabel}).Value
+	issue := test.NewIssueBuilder(test.IssueNumber).Labels([]string{configuration.FailingCILabel}).Value
 	pullr := test.NewPullRequestBuilder(test.IssueNumber).BaseBranch(ctx.Username, ctx.Repository, test.CommitSHA).Value
 	clt.MockIssues.On("Get", ctx.Username, ctx.Repository, test.IssueNumber).Return(issue, nil, nil)
 

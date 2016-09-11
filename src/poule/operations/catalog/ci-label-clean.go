@@ -3,9 +3,9 @@ package catalog
 import (
 	"fmt"
 
+	"poule/configuration"
 	"poule/gh"
 	"poule/operations"
-	"poule/utils"
 
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
@@ -43,7 +43,7 @@ func (o *ciLabelCleanOperation) Apply(c *operations.Context, item gh.Item, userD
 	var err error
 	if hasFailures := userData.(bool); hasFailures {
 		pr := item.PullRequest()
-		_, err = c.Client.Issues().RemoveLabelForIssue(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number, utils.FailingCILabel)
+		_, err = c.Client.Issues().RemoveLabelForIssue(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number, configuration.FailingCILabel)
 	}
 	return err
 }
@@ -51,7 +51,7 @@ func (o *ciLabelCleanOperation) Apply(c *operations.Context, item gh.Item, userD
 func (o *ciLabelCleanOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
 	if hasFailures := userData.(bool); hasFailures {
 		pr := item.PullRequest()
-		return fmt.Sprintf("Removing label %q from pull request #%d", utils.FailingCILabel, *pr.Number)
+		return fmt.Sprintf("Removing label %q from pull request #%d", configuration.FailingCILabel, *pr.Number)
 	}
 	return ""
 }
@@ -66,7 +66,7 @@ func (o *ciLabelCleanOperation) Filter(c *operations.Context, item gh.Item) (ope
 	}
 
 	// Skip any issue which doesn't have a label indicating CI failure.
-	if !utils.HasFailingCILabel(issue.Labels) {
+	if !gh.HasFailingCILabel(issue.Labels) {
 		return operations.Reject, nil, nil
 	}
 
@@ -75,11 +75,11 @@ func (o *ciLabelCleanOperation) Filter(c *operations.Context, item gh.Item) (ope
 	if err != nil {
 		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve statuses for pull request #%d", *pr.Number)
 	}
-	latestStatuses := utils.GetLatestStatuses(repoStatuses)
+	latestStatuses := gh.GetLatestStatuses(repoStatuses)
 
 	// Include this pull request as part of the filter, and store the failures
 	// information as part of the user data.
-	return operations.Accept, utils.HasFailures(latestStatuses), nil
+	return operations.Accept, latestStatuses.HasFailures(), nil
 }
 
 func (o *ciLabelCleanOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {

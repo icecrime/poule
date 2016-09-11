@@ -6,7 +6,7 @@ import (
 
 	"poule/configuration"
 	"poule/gh"
-	"poule/utils"
+	"poule/operations/catalog/settings"
 
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
@@ -60,7 +60,7 @@ func (r *PullRequestRunner) ListItems(context *Context, op Operation, page int) 
 	return items, resp, err
 }
 
-func Run(c *configuration.Config, op Operation, runner Runner, filters []*utils.Filter) error {
+func Run(c *configuration.Config, op Operation, runner Runner, filters []*settings.Filter) error {
 	context := Context{}
 	context.Client = gh.MakeClient(c)
 	context.Username, context.Repository = c.SplitRepository()
@@ -93,7 +93,7 @@ func Run(c *configuration.Config, op Operation, runner Runner, filters []*utils.
 				if s := op.Describe(&context, item, userdata); s != "" {
 					log.Printf(s)
 				}
-				if !utils.IsDryRun(c) {
+				if !c.DryRun {
 					if err := op.Apply(&context, item, userdata); err != nil {
 						return err
 					}

@@ -6,8 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"poule/configuration"
 	"poule/gh"
-	"poule/utils"
+	"poule/operations/catalog/settings"
 
 	"github.com/google/go-github/github"
 	"github.com/mitchellh/mapstructure"
@@ -76,10 +77,10 @@ func (d *pruneDescriptor) makeOperation(config *pruneConfig) (operations.Operati
 	if operation.action, err = parseAction(config.Action); err != nil {
 		return nil, err
 	}
-	if operation.gracePeriod, err = utils.ParseExtDuration(config.GracePeriod); err != nil {
+	if operation.gracePeriod, err = settings.ParseExtDuration(config.GracePeriod); err != nil {
 		return nil, err
 	}
-	if operation.outdatedThreshold, err = utils.ParseExtDuration(config.OutdatedThreshold); err != nil {
+	if operation.outdatedThreshold, err = settings.ParseExtDuration(config.OutdatedThreshold); err != nil {
 		return nil, err
 	}
 	return &operation, nil
@@ -87,8 +88,8 @@ func (d *pruneDescriptor) makeOperation(config *pruneConfig) (operations.Operati
 
 type pruneOperation struct {
 	action            string
-	gracePeriod       utils.ExtDuration
-	outdatedThreshold utils.ExtDuration
+	gracePeriod       settings.ExtDuration
+	outdatedThreshold settings.ExtDuration
 }
 
 func (o *pruneOperation) Accepts() operations.AcceptedType {
@@ -148,7 +149,7 @@ func (o *pruneOperation) Filter(c *operations.Context, item gh.Item) (operations
 	for size := len(comments); size > 0; size-- {
 		// Skip all comments produced by the tool itself (as indicated by the
 		// presence of the PouleToken).
-		if strings.Contains(*comments[size-1].Body, utils.PouleToken) {
+		if strings.Contains(*comments[size-1].Body, configuration.PouleToken) {
 			comments = comments[0 : size-1]
 			continue
 		}
@@ -190,7 +191,7 @@ func formatPingComment(issue *github.Issue, o *pruneOperation) string {
 
 Thank you!`
 	return fmt.Sprintf(comment,
-		utils.PouleToken,
+		configuration.PouleToken,
 		o.action,
 		o.outdatedThreshold.Quantity,
 		o.outdatedThreshold.Unit,

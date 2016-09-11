@@ -3,9 +3,9 @@ package catalog
 import (
 	"fmt"
 
+	"poule/configuration"
 	"poule/gh"
 	"poule/operations"
-	"poule/utils"
 
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
@@ -54,11 +54,11 @@ func (o *ciLabelAuditOperation) Describe(c *operations.Context, item gh.Item, us
 	ud := userData.(ciLabelAuditOperationUserData)
 	// Failing CI label but no CI failures: this is inconsistent.
 	if ud.hasFailingCILabel && !ud.hasFailures {
-		return fmt.Sprintf("PR#%d is labeled %q but has no failures", *pr.Number, utils.FailingCILabel)
+		return fmt.Sprintf("PR#%d is labeled %q but has no failures", *pr.Number, configuration.FailingCILabel)
 	}
 	// No failing CI label with CI failures: this is inconsistent.
 	if !ud.hasFailingCILabel && ud.hasFailures {
-		return fmt.Sprintf("PR#%d is not labeled %q but has failures", *pr.Number, utils.FailingCILabel)
+		return fmt.Sprintf("PR#%d is not labeled %q but has failures", *pr.Number, configuration.FailingCILabel)
 	}
 	// The pull request has a consistent combination of labels and failures.
 	return ""
@@ -83,13 +83,13 @@ func (o *ciLabelAuditOperation) Filter(c *operations.Context, item gh.Item) (ope
 	if err != nil {
 		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve statuses for pull request #%d", *pr.Number)
 	}
-	latestStatuses := utils.GetLatestStatuses(repoStatuses)
+	latestStatuses := gh.GetLatestStatuses(repoStatuses)
 
 	// Include this pull request as part of the filter, and store the failures
 	// information as part of the user data.
 	userData := ciLabelAuditOperationUserData{
-		hasFailures:       utils.HasFailures(latestStatuses),
-		hasFailingCILabel: utils.HasFailingCILabel(issue.Labels),
+		hasFailures:       latestStatuses.HasFailures(),
+		hasFailingCILabel: gh.HasFailingCILabel(issue.Labels),
 	}
 	return operations.Accept, userData, nil
 }
