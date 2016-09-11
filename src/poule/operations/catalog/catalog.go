@@ -19,6 +19,9 @@ type CommandLineDescription struct {
 
 	// Flags is an array of operation-specific command line flags.
 	Flags []cli.Flag
+
+	// ArgsUsage describes the arguments to this command.
+	ArgsUsage string
 }
 
 // OperationDescriptor describes an operation.

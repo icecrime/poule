@@ -27,7 +27,8 @@ type prRebuildDescriptor struct{}
 func (d *prRebuildDescriptor) CommandLineDescription() CommandLineDescription {
 	return CommandLineDescription{
 		Name:        "rebuild",
-		Description: "Rebuild failed pull requests",
+		Description: "Rebuild the specified configurations when in failure",
+		ArgsUsage:   "configuration [configuration...]",
 	}
 }
 
@@ -36,6 +37,9 @@ func (d *prRebuildDescriptor) CommandFlags() []cli.Flag {
 }
 
 func (d *prRebuildDescriptor) OperationFromCli(c *cli.Context) (operations.Operation, error) {
+	if c.NArg() < 1 {
+		return nil, errors.Errorf("rebuild requires at least one argument")
+	}
 	return &prRebuildOperation{
 		Builder:        rebuildPR,
 		Configurations: c.Args(),

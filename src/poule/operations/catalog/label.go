@@ -28,11 +28,15 @@ type labelDescriptor struct{}
 func (d *labelDescriptor) CommandLineDescription() CommandLineDescription {
 	return CommandLineDescription{
 		Name:        "label",
-		Description: "Apply labels to issues and pull requests",
+		Description: "Apply label(s) to items which body matches a pattern",
+		ArgsUsage:   "label=pattern[,pattern...]...",
 	}
 }
 
 func (d *labelDescriptor) OperationFromCli(c *cli.Context) (operations.Operation, error) {
+	if c.NArg() < 1 {
+		return nil, errors.Errorf("label requires at least one argument")
+	}
 	patterns, err := settings.NewMultiValuedKeysFromSlice(c.Args())
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing command line")

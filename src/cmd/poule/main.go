@@ -38,10 +38,11 @@ func main() {
 func makeCommand(descriptor catalog.OperationDescriptor) cli.Command {
 	clidesc := descriptor.CommandLineDescription()
 	return cli.Command{
-		Category: "Operations",
-		Flags:    append(clidesc.Flags, settings.FilteringFlag),
-		Name:     clidesc.Name,
-		Usage:    clidesc.Description,
+		Category:  "Operations",
+		Flags:     append(clidesc.Flags, settings.FilteringFlag),
+		Name:      clidesc.Name,
+		Usage:     clidesc.Description,
+		ArgsUsage: clidesc.ArgsUsage,
 		Action: func(c *cli.Context) {
 			if err := executeSingleOperation(c, descriptor); err != nil {
 				fmt.Printf("FATAL: Executing single operation: %v\n", err)
@@ -58,6 +59,7 @@ func executeSingleOperation(c *cli.Context, descriptor catalog.OperationDescript
 	}
 	op, err := descriptor.OperationFromCli(c)
 	if err != nil {
+		cli.ShowCommandHelp(c, descriptor.CommandLineDescription().Name)
 		log.Fatalf("Error creating %q operation: %v", descriptor.CommandLineDescription().Name, err)
 	}
 	return runSingleOperation(configuration.FromGlobalFlags(c), op, f)
@@ -65,13 +67,13 @@ func executeSingleOperation(c *cli.Context, descriptor catalog.OperationDescript
 
 func runSingleOperation(c *configuration.Config, op operations.Operation, filters []*utils.Filter) error {
 	if filterIncludesIssues(filters) && op.Accepts()&operations.Issues == operations.Issues {
-		if err := operations.RunOnIssues(c, op, filters); err != nil {
+		if err := operations.Run(c, op, &operations.IssueRunner{}, filters); err != nil {
 			return err
 		}
 
 	}
 	if filterIncludesPullRequests(filters) && op.Accepts()&operations.PullRequests == operations.PullRequests {
-		if err := operations.RunOnPullRequests(c, op, filters); err != nil {
+		if err := operations.Run(c, op, &operations.PullRequestRunner{}, filters); err != nil {
 			return err
 		}
 	}
