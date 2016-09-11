@@ -45,7 +45,10 @@ func executeBatchFile(c *cli.Context, file string) error {
 
 	// Read the global configuration flags, and override them with the
 	// specialized flags defined in the YAML configuration file.
-	config := configuration.FromGlobalFlags(c)
+	config, err := configuration.FromGlobalFlags(c)
+	if err != nil {
+		return err
+	}
 	batchConfig.Override(config)
 
 	// Execute each command described as part of the YAML file.

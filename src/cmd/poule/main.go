@@ -53,16 +53,19 @@ func makeCommand(descriptor catalog.OperationDescriptor) cli.Command {
 }
 
 func executeSingleOperation(c *cli.Context, descriptor catalog.OperationDescriptor) error {
+	config, err := configuration.FromGlobalFlags(c)
+	if err != nil {
+		return err
+	}
 	f, err := settings.ParseCliFilters(c)
 	if err != nil {
-		log.Fatalf("Error parsing filters: %v", err)
+		return err
 	}
 	op, err := descriptor.OperationFromCli(c)
 	if err != nil {
-		cli.ShowCommandHelp(c, descriptor.CommandLineDescription().Name)
-		log.Fatalf("Error creating %q operation: %v", descriptor.CommandLineDescription().Name, err)
+		return err
 	}
-	return runSingleOperation(configuration.FromGlobalFlags(c), op, f)
+	return runSingleOperation(config, op, f)
 }
 
 func runSingleOperation(c *configuration.Config, op operations.Operation, filters []*utils.Filter) error {

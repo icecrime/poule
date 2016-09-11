@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"log"
 	"time"
 )
 
@@ -39,8 +38,7 @@ func (e ExtDuration) Duration() time.Duration {
 	case 'y', 'Y':
 		return time.Duration(e.Quantity) * 356 * day
 	default:
-		log.Fatalf("Invalid duration unit %c", e.Unit)
-		return time.Duration(0) // Unreachable
+		panic("invalid duration unit")
 	}
 }
 
@@ -55,8 +53,7 @@ func (e ExtDuration) String() string {
 	case 'y', 'Y':
 		return fmt.Sprintf("%d %s", e.Quantity, pluralize(e.Quantity, "year"))
 	default:
-		log.Fatalf("Invalid duration unit %c", e.Unit)
-		return "" // Unreachable
+		panic("invalid duration unit")
 	}
 }
 

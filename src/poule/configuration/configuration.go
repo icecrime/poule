@@ -1,8 +1,10 @@
 package configuration
 
 import (
+	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
 
@@ -12,6 +14,21 @@ type Config struct {
 	Repository string        `yaml:"repository"`
 	Token      string        `yaml:"token"`
 	TokenFile  string        `yaml:"token-file"`
+}
+
+func (c *Config) SplitRepository() (string, string) {
+	username, repository, err := getRepository(c.Repository)
+	if err != nil {
+		panic("invalid repository")
+	}
+	return username, repository
+}
+
+func (c *Config) Validate() error {
+	if _, _, err := getRepository(c.Repository); err != nil {
+		return err
+	}
+	return nil
 }
 
 func Flags() []cli.Flag {
@@ -40,12 +57,21 @@ func Flags() []cli.Flag {
 	}
 }
 
-func FromGlobalFlags(c *cli.Context) *Config {
-	return &Config{
+func FromGlobalFlags(c *cli.Context) (*Config, error) {
+	config := &Config{
 		Delay:      c.GlobalDuration("delay"),
 		DryRun:     c.GlobalBool("dry-run"),
 		Repository: c.GlobalString("repository"),
 		Token:      c.GlobalString("token"),
 		TokenFile:  c.GlobalString("token-file"),
 	}
+	return config, config.Validate()
+}
+
+func getRepository(repository string) (string, string, error) {
+	s := strings.SplitN(repository, "/", 2)
+	if len(s) != 2 {
+		return "", "", errors.Errorf("invalid repository %q", repository)
+	}
+	return s[0], s[1], nil
 }

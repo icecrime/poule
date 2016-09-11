@@ -63,12 +63,12 @@ func (r *PullRequestRunner) ListItems(context *Context, op Operation, page int) 
 func Run(c *configuration.Config, op Operation, runner Runner, filters []*utils.Filter) error {
 	context := Context{}
 	context.Client = gh.MakeClient(c)
-	context.Username, context.Repository = gh.GetRepository(c.Repository)
+	context.Username, context.Repository = c.SplitRepository()
 
 	for page := 1; page != 0; {
 		items, resp, err := runner.ListItems(&context, op, page)
 		if err != nil {
-			return errors.Wrapf(err, "failed to list issues for repository \"%s:%s\"", context.Username, context.Repository)
+			return err
 		}
 
 		// Handle each issue, filtering them using the operation first.
