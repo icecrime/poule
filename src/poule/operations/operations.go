@@ -9,6 +9,7 @@ import (
 	"poule/utils"
 
 	"github.com/google/go-github/github"
+	"github.com/pkg/errors"
 )
 
 type Context struct {
@@ -75,7 +76,7 @@ type Operation interface {
 	// Filter returns whether that operation should apply to the specified
 	// item, and an operation specific user data that is guaranteed to be
 	// passed on Apply and Describe invocation.
-	Filter(*Context, gh.Item) (FilterResult, interface{})
+	Filter(*Context, gh.Item) (FilterResult, interface{}, error)
 
 	// IssueListOptions returns the global filtering options to apply when
 	// listing issues for the specified context.
@@ -86,7 +87,7 @@ type Operation interface {
 	PullRequestListOptions(*Context) *github.PullRequestListOptions
 }
 
-func RunOnIssues(c *configuration.Config, op Operation, filters []*utils.Filter) {
+func RunOnIssues(c *configuration.Config, op Operation, filters []*utils.Filter) error {
 	context := Context{}
 	context.Client = gh.MakeClient(c)
 	context.Username, context.Repository = gh.GetRepository(c.Repository)
@@ -100,7 +101,7 @@ func RunOnIssues(c *configuration.Config, op Operation, filters []*utils.Filter)
 		// List all issues for that repository with the specific settings.
 		issues, resp, err := context.Client.Issues().ListByRepo(context.Username, context.Repository, listOptions)
 		if err != nil {
-			log.Fatal(err)
+			return errors.Wrapf(err, "failed to list issues for repository \"%s:%s\"", context.Username, context.Repository)
 		}
 
 		// Handle each issue, filtering them using the operation first.
@@ -114,20 +115,27 @@ func RunOnIssues(c *configuration.Config, op Operation, filters []*utils.Filter)
 				}
 			}
 
-			// Apply operation-specific filtering, and execute.
-			switch filterResult, userdata := op.Filter(&context, item); filterResult {
+			// Apply operation-specific filtering.
+			filterResult, userdata, err := op.Filter(&context, item)
+			if err != nil {
+				return err
+			}
+
+			// Proceed with operation application depending on the result of
+			// the filtering.
+			switch filterResult {
 			case Accept:
 				if s := op.Describe(&context, item, userdata); s != "" {
 					log.Printf(s)
 				}
 				if !utils.IsDryRun(c) {
 					if err := op.Apply(&context, item, userdata); err != nil {
-						log.Printf("Error applying operation on issue %d: %v", *issue.Number, err)
+						return err
 					}
 				}
 				break
 			case Terminal:
-				return
+				return nil
 			}
 		}
 
@@ -138,9 +146,10 @@ func RunOnIssues(c *configuration.Config, op Operation, filters []*utils.Filter)
 			time.Sleep(c.Delay)
 		}
 	}
+	return nil
 }
 
-func RunOnPullRequests(c *configuration.Config, op Operation, filters []*utils.Filter) {
+func RunOnPullRequests(c *configuration.Config, op Operation, filters []*utils.Filter) error {
 	context := Context{}
 	context.Client = gh.MakeClient(c)
 	context.Username, context.Repository = gh.GetRepository(c.Repository)
@@ -154,7 +163,7 @@ func RunOnPullRequests(c *configuration.Config, op Operation, filters []*utils.F
 		// List all issues for that repository with the specific settings.
 		prs, resp, err := context.Client.PullRequests().List(context.Username, context.Repository, listOptions)
 		if err != nil {
-			log.Fatal(err)
+			return errors.Wrapf(err, "failed to list pull requests for repository \"%s:%s\"", context.Username, context.Repository)
 		}
 
 		// Handle each issue, filtering them using the operation first.
@@ -168,8 +177,15 @@ func RunOnPullRequests(c *configuration.Config, op Operation, filters []*utils.F
 				}
 			}
 
-			// Apply operation-specific filtering, and execute.
-			switch filterResult, userdata := op.Filter(&context, item); filterResult {
+			// Apply operation-specific filtering.
+			filterResult, userdata, err := op.Filter(&context, item)
+			if err != nil {
+				return err
+			}
+
+			// Proceed with operation application depending on the result of
+			// the filtering.
+			switch filterResult {
 			case Accept:
 				if s := op.Describe(&context, item, userdata); s != "" {
 					log.Printf(s)
@@ -177,12 +193,12 @@ func RunOnPullRequests(c *configuration.Config, op Operation, filters []*utils.F
 
 				if !utils.IsDryRun(c) {
 					if err := op.Apply(&context, item, userdata); err != nil {
-						log.Printf("Error applying operation on pull request %d: %v", *pr.Number, err)
+						return err
 					}
 				}
 				break
 			case Terminal:
-				return
+				return nil
 			}
 		}
 
@@ -193,4 +209,5 @@ func RunOnPullRequests(c *configuration.Config, op Operation, filters []*utils.F
 			time.Sleep(c.Delay)
 		}
 	}
+	return nil
 }

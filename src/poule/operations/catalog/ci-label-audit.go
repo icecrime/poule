@@ -2,13 +2,13 @@ package catalog
 
 import (
 	"fmt"
-	"log"
 
 	"poule/gh"
 	"poule/operations"
 	"poule/utils"
 
 	"github.com/google/go-github/github"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
 
@@ -25,12 +25,12 @@ func (d *ciLabelAuditOperationDescriptor) CommandLineDescription() CommandLineDe
 	}
 }
 
-func (d *ciLabelAuditOperationDescriptor) OperationFromCli(*cli.Context) operations.Operation {
-	return &ciLabelAuditOperation{}
+func (d *ciLabelAuditOperationDescriptor) OperationFromCli(*cli.Context) (operations.Operation, error) {
+	return &ciLabelAuditOperation{}, nil
 }
 
-func (d *ciLabelAuditOperationDescriptor) OperationFromConfig(operations.Configuration) operations.Operation {
-	return &ciLabelAuditOperation{}
+func (d *ciLabelAuditOperationDescriptor) OperationFromConfig(operations.Configuration) (operations.Operation, error) {
+	return &ciLabelAuditOperation{}, nil
 }
 
 type ciLabelAuditOperation struct{}
@@ -64,24 +64,24 @@ func (o *ciLabelAuditOperation) Describe(c *operations.Context, item gh.Item, us
 	return ""
 }
 
-func (o *ciLabelAuditOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}) {
+func (o *ciLabelAuditOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
 	// Exclude all pull requests which cannot be merged (e.g., rebase needed).
 	pr := item.PullRequest()
 	if pr.Mergeable != nil && !*pr.Mergeable {
-		return operations.Reject, nil
+		return operations.Reject, nil, nil
 	}
 
 	// Fetch the issue information for that pull request: that's the only way
 	// to retrieve the labels.
 	issue, _, err := c.Client.Issues().Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
 	if err != nil {
-		log.Fatalf("Error getting issue %d: %v", *pr.Number, err)
+		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve issue #%d", *pr.Number)
 	}
 
 	// List all statuses for that item.
 	repoStatuses, _, err := c.Client.Repositories().ListStatuses(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Head.SHA, nil)
 	if err != nil {
-		log.Fatal(err)
+		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve statuses for pull request #%d", *pr.Number)
 	}
 	latestStatuses := utils.GetLatestStatuses(repoStatuses)
 
@@ -91,7 +91,7 @@ func (o *ciLabelAuditOperation) Filter(c *operations.Context, item gh.Item) (ope
 		hasFailures:       utils.HasFailures(latestStatuses),
 		hasFailingCILabel: utils.HasFailingCILabel(issue.Labels),
 	}
-	return operations.Accept, userData
+	return operations.Accept, userData, nil
 }
 
 func (o *ciLabelAuditOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {

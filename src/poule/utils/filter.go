@@ -8,6 +8,7 @@ import (
 	"poule/gh"
 
 	"github.com/google/go-github/github"
+	"github.com/pkg/errors"
 )
 
 type Filter struct {
@@ -49,7 +50,7 @@ func MakeFilter(filterType, value string) (*Filter, error) {
 	if constructor, ok := typeMapping[filterType]; ok {
 		return constructor(value)
 	}
-	return nil, fmt.Errorf("Unknown issue filter type %q", filterType)
+	return nil, errors.Errorf("unknown filter type %q", filterType)
 }
 
 // AssignedFilter filters issues based on whether they are assigned or not.
@@ -60,7 +61,7 @@ type AssignedFilter struct {
 func makeAssignedFilter(value string) (*Filter, error) {
 	b, err := strconv.ParseBool(value)
 	if err != nil {
-		return nil, fmt.Errorf("Invalid value %q for \"assigned\" filter", value)
+		return nil, errors.Errorf("invalid value %q for \"assigned\" filter", value)
 	}
 	return asFilter(AssignedFilter{b}), nil
 }
@@ -78,7 +79,7 @@ func makeCommentsFilter(value string) (*Filter, error) {
 	var count int
 	var operation rune
 	if n, err := fmt.Sscanf(value, "%c%d", &operation, &count); n != 2 || err != nil {
-		return nil, fmt.Errorf("Invalid value %q for \"comments\" filter", value)
+		return nil, errors.Errorf("invalid value %q for \"comments\" filter", value)
 	}
 
 	var predicate func(int) bool
@@ -93,7 +94,7 @@ func makeCommentsFilter(value string) (*Filter, error) {
 		predicate = func(n int) bool { return n > count }
 		break
 	default:
-		return nil, fmt.Errorf("Bad operator %c for \"comments\" filter", operation)
+		return nil, errors.Errorf("invalid operator %c for \"comments\" filter", operation)
 	}
 	return asFilter(CommentsFilter{predicate}), nil
 }
@@ -118,7 +119,7 @@ func makeIsFilter(value string) (*Filter, error) {
 	case "issue":
 		return asFilter(IsFilter{PullRequestOnly: false}), nil
 	default:
-		return nil, fmt.Errorf("Invalid value %q for \"is\" filter", value)
+		return nil, errors.Errorf("invalid value %q for \"is\" filter", value)
 	}
 }
 

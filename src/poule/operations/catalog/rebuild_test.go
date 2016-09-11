@@ -68,12 +68,15 @@ func TestRebuild(t *testing.T) {
 
 	// Call into the operation.
 	item := gh.MakeItem(pullr)
-	res, userData := operation.Filter(ctx, item)
+	res, userData, err := operation.Filter(ctx, item)
+	if err != nil {
+		t.Fatalf("Filter returned unexpected error %v", err)
+	}
 	if res != operations.Accept {
-		t.Fatalf("Rebuild filer should accept issue with failure")
+		t.Fatalf("Filter returned unexpected result %v", res)
 	}
 	if err := operation.Apply(ctx, item, userData); err != nil {
-		t.Fatalf("Rebuild apply returned unexpected error %v", err)
+		t.Fatalf("Apply returned unexpected error %v", err)
 	}
 	clt.MockIssues.AssertExpectations(t)
 	clt.MockRepositories.AssertExpectations(t)
@@ -90,8 +93,10 @@ func TestRebuildSkipFailing(t *testing.T) {
 
 	// Call into the operation.
 	item := gh.MakeItem(pullr)
-	if res, _ := operation.Filter(ctx, item); res != operations.Reject {
-		t.Fatalf("Rebuild filter should reject issue with label %q", test.IssueNumber)
+	if res, _, err := operation.Filter(ctx, item); err != nil {
+		t.Fatalf("Filter returned unexpected error %v", err)
+	} else if res != operations.Reject {
+		t.Fatalf("Filter should reject issue with label %q", test.IssueNumber)
 	}
 	clt.MockIssues.AssertExpectations(t)
 }

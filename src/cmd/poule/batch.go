@@ -1,8 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
-	"log"
+	"os"
 	"time"
 
 	"poule/configuration"
@@ -10,6 +11,7 @@ import (
 	"poule/operations/catalog"
 	"poule/operations/catalog/settings"
 
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
 )
@@ -22,35 +24,47 @@ var batchCommand = cli.Command{
 
 func doBatchCommand(c *cli.Context) {
 	for _, arg := range c.Args() {
-		b, err := ioutil.ReadFile(arg)
-		if err != nil {
-			log.Fatalf("Failed to read file %q: %v", arg, err)
-		}
-
-		// Read the YAML configuration file identified by the argument.
-		batchConfig := batchConfiguration{}
-		if err := yaml.Unmarshal(b, &batchConfig); err != nil {
-			log.Fatalf("Failed to read YAML file %q: %v", arg, err)
-		}
-
-		// Read the global configuration flags, and override them with the
-		// specialized flags defined in the YAML configuration file.
-		config := configuration.FromGlobalFlags(c)
-		batchConfig.Override(config)
-
-		// Execute each command described as part of the YAML file.
-		for _, operationConfig := range batchConfig.Operations {
-			descriptor, ok := catalog.ByNameIndex[operationConfig.Type]
-			if !ok {
-				log.Fatalf("Unknown operation %q in file %q", operationConfig.Type, arg)
-			}
-			itemFilters, err := settings.ParseConfigurationFilters(operationConfig.Filters)
-			if err != nil {
-				log.Fatalf("Failed to parse filtering settings: %v", err)
-			}
-			runSingleOperation(config, descriptor.OperationFromConfig(operationConfig.Settings), itemFilters)
+		if err := executeBatchFile(c, arg); err != nil {
+			fmt.Printf("FATAL: Executing batch file %q: %v\n", arg, err)
+			os.Exit(1)
 		}
 	}
+}
+
+func executeBatchFile(c *cli.Context, file string) error {
+	b, err := ioutil.ReadFile(file)
+	if err != nil {
+		return err
+	}
+
+	// Read the YAML configuration file identified by the argument.
+	batchConfig := batchConfiguration{}
+	if err := yaml.Unmarshal(b, &batchConfig); err != nil {
+		return err
+	}
+
+	// Read the global configuration flags, and override them with the
+	// specialized flags defined in the YAML configuration file.
+	config := configuration.FromGlobalFlags(c)
+	batchConfig.Override(config)
+
+	// Execute each command described as part of the YAML file.
+	for _, operationConfig := range batchConfig.Operations {
+		descriptor, ok := catalog.ByNameIndex[operationConfig.Type]
+		if !ok {
+			return errors.Errorf("unknown operation %q in file %q", operationConfig.Type, file)
+		}
+		itemFilters, err := settings.ParseConfigurationFilters(operationConfig.Filters)
+		if err != nil {
+			return err
+		}
+		op, err := descriptor.OperationFromConfig(operationConfig.Settings)
+		if err != nil {
+			return err
+		}
+		runSingleOperation(config, op, itemFilters)
+	}
+	return nil
 }
 
 type batchConfiguration struct {

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/google/go-github/github"
 	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
 
@@ -35,21 +35,21 @@ func (d *prRebuildDescriptor) CommandFlags() []cli.Flag {
 	return []cli.Flag{}
 }
 
-func (d *prRebuildDescriptor) OperationFromCli(c *cli.Context) operations.Operation {
+func (d *prRebuildDescriptor) OperationFromCli(c *cli.Context) (operations.Operation, error) {
 	return &prRebuildOperation{
 		Builder:        rebuildPR,
 		Configurations: c.Args(),
-	}
+	}, nil
 }
 
-func (d *prRebuildDescriptor) OperationFromConfig(c operations.Configuration) operations.Operation {
+func (d *prRebuildDescriptor) OperationFromConfig(c operations.Configuration) (operations.Operation, error) {
 	operation := &prRebuildOperation{
 		Builder: rebuildPR,
 	}
 	if err := mapstructure.Decode(c, &operation); err != nil {
-		log.Fatalf("Error creating operation from configuration: %v", err)
+		return nil, errors.Wrap(err, "decoding configuration")
 	}
-	return operation
+	return operation, nil
 }
 
 type prRebuildOperation struct {
@@ -80,24 +80,24 @@ func (o *prRebuildOperation) Describe(c *operations.Context, item gh.Item, userD
 	return fmt.Sprintf("Rebuilding pull request #%d for %s", *pr.Number, strings.Join(contexts, ", "))
 }
 
-func (o *prRebuildOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}) {
+func (o *prRebuildOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
 	// Fetch the issue information for that pull request: that's the only way
 	// to retrieve the labels.
 	pr := item.PullRequest()
 	issue, _, err := c.Client.Issues().Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
 	if err != nil {
-		log.Fatalf("Error getting issue %d: %v", *pr.Number, err)
+		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve issue #%d", *pr.Number)
 	}
 
 	// Skip all pull requests which are known to fail CI.
 	if utils.HasFailingCILabel(issue.Labels) {
-		return operations.Reject, nil
+		return operations.Reject, nil, nil
 	}
 
 	// Get all statuses for that item.
 	repoStatuses, _, err := c.Client.Repositories().ListStatuses(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Head.SHA, nil)
 	if err != nil {
-		log.Fatal(err)
+		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve statuses for pull request #%d", *pr.Number)
 	}
 	latestStatuses := utils.GetLatestStatuses(repoStatuses)
 
@@ -108,7 +108,7 @@ func (o *prRebuildOperation) Filter(c *operations.Context, item gh.Item) (operat
 			contexts = append(contexts, context)
 		}
 	}
-	return operations.Accept, contexts
+	return operations.Accept, contexts, nil
 }
 
 func (o *prRebuildOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {
@@ -152,7 +152,7 @@ func rebuildPR(pr *github.PullRequest, context string) (err error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 204 {
-		return fmt.Errorf("requesting %s for PR %d for %s returned status code: %d: make sure the repo allows builds.", utils.BaseUrl, *pr.Number, *pr.Base.Repo.FullName, resp.StatusCode)
+		return errors.Errorf("requesting %s for PR %d for %s returned status code: %d: make sure the repo allows builds.", utils.BaseUrl, *pr.Number, *pr.Base.Repo.FullName, resp.StatusCode)
 	}
 	return nil
 }

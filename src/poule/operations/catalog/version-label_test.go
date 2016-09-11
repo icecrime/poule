@@ -36,7 +36,10 @@ func TestVersionLabel(t *testing.T) {
 			On("AddLabelsToIssue", ctx.Username, ctx.Repository, test.IssueNumber, []string{expected}).
 			Return([]github.Label{github.Label{Name: test.MakeString(expected)}}, nil, nil)
 
-		res, userData := operation.Filter(ctx, issue)
+		res, userData, err := operation.Filter(ctx, issue)
+		if err != nil {
+			t.Fatalf("Filter returned unexpected error %v", err)
+		}
 		if res != operations.Accept {
 			t.Fatalf("Expected filter to accept %q, got %v", body, res)
 		}
@@ -58,8 +61,10 @@ func TestVersionLabelRejects(t *testing.T) {
 		"Version: 1.12.0",
 	} {
 		issue := test.NewIssueBuilder(test.IssueNumber).Body(body).Item()
-		if res, _ := operation.Filter(ctx, issue); res != operations.Reject {
-			t.Fatalf("Unexpected result %v when filtering %q", res, body)
+		if res, _, err := operation.Filter(ctx, issue); err != nil {
+			t.Fatalf("Filter returned unexpected error %v", err)
+		} else if res != operations.Reject {
+			t.Fatalf("Filter returned unexpected result %v", res, body)
 		}
 	}
 }

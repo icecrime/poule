@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
@@ -12,6 +11,7 @@ import (
 
 	"github.com/google/go-github/github"
 	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
 
@@ -32,35 +32,34 @@ func (d *labelDescriptor) CommandLineDescription() CommandLineDescription {
 	}
 }
 
-func (d *labelDescriptor) OperationFromCli(c *cli.Context) operations.Operation {
+func (d *labelDescriptor) OperationFromCli(c *cli.Context) (operations.Operation, error) {
 	patterns, err := settings.NewMultiValuedKeysFromSlice(c.Args())
 	if err != nil {
-		log.Fatalf("Failed to create \"label\" operation; %v", err)
+		return nil, errors.Wrap(err, "parsing command line")
 	}
-	labelOperationConfig := &labelOperationConfig{
-		Patterns: patterns,
-	}
+	labelOperationConfig := &labelOperationConfig{Patterns: patterns}
 	return d.makeOperation(labelOperationConfig)
 }
 
-func (d *labelDescriptor) OperationFromConfig(c operations.Configuration) operations.Operation {
+func (d *labelDescriptor) OperationFromConfig(c operations.Configuration) (operations.Operation, error) {
 	labelOperationConfig := &labelOperationConfig{}
 	if err := mapstructure.Decode(c, &labelOperationConfig); err != nil {
-		log.Fatalf("Error creating operation from configuration: %v", err)
+		return nil, errors.Wrap(err, "decoding configuration")
 	}
 	return d.makeOperation(labelOperationConfig)
 }
 
-func (d *labelDescriptor) makeOperation(config *labelOperationConfig) operations.Operation {
+func (d *labelDescriptor) makeOperation(config *labelOperationConfig) (operations.Operation, error) {
 	patterns := map[string][]*regexp.Regexp{}
-	config.Patterns.ForEach(func(key, value string) {
+	err := config.Patterns.ForEach(func(key, value string) error {
 		re, err := regexp.Compile(value)
 		if err != nil {
-			log.Fatalf("Invalid value %q for pattern: %v", value, err)
+			return errors.Wrap(err, "invalid pattern")
 		}
 		patterns[key] = append(patterns[key], re)
+		return nil
 	})
-	return &labelOperation{patterns: patterns}
+	return &labelOperation{patterns: patterns}, err
 }
 
 type labelOperation struct {
@@ -80,7 +79,7 @@ func (o *labelOperation) Describe(c *operations.Context, item gh.Item, userData 
 	return fmt.Sprintf("Adding labels %s to item #%d", strings.Join(userData.([]string), ", "), itemNumber(item))
 }
 
-func (o *labelOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}) {
+func (o *labelOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
 	itemBody := itemBody(item)
 
 	// Try to match all provided regular expressions, and collect the set of
@@ -102,7 +101,7 @@ func (o *labelOperation) Filter(c *operations.Context, item gh.Item) (operations
 
 	// It's unnecessary to go further if there are no labels to apply.
 	if len(labelSet) == 0 {
-		return operations.Reject, nil
+		return operations.Reject, nil, nil
 	}
 
 	// Convert the set of unique labels to a string slice.
@@ -110,7 +109,7 @@ func (o *labelOperation) Filter(c *operations.Context, item gh.Item) (operations
 	for key, _ := range labelSet {
 		labels = append(labels, key)
 	}
-	return operations.Accept, labels
+	return operations.Accept, labels, nil
 }
 
 func (o *labelOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {

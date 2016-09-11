@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"fmt"
-	"log"
 	"poule/operations"
 	"strings"
 	"time"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/google/go-github/github"
 	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
 
@@ -51,7 +51,7 @@ func (d *pruneDescriptor) CommandLineDescription() CommandLineDescription {
 	}
 }
 
-func (d *pruneDescriptor) OperationFromCli(c *cli.Context) operations.Operation {
+func (d *pruneDescriptor) OperationFromCli(c *cli.Context) (operations.Operation, error) {
 	pruneConfig := &pruneConfig{
 		Action:            c.String("action"),
 		GracePeriod:       c.String("grace-period"),
@@ -60,29 +60,29 @@ func (d *pruneDescriptor) OperationFromCli(c *cli.Context) operations.Operation 
 	return d.makeOperation(pruneConfig)
 }
 
-func (d *pruneDescriptor) OperationFromConfig(c operations.Configuration) operations.Operation {
+func (d *pruneDescriptor) OperationFromConfig(c operations.Configuration) (operations.Operation, error) {
 	pruneConfig := &pruneConfig{}
 	if err := mapstructure.Decode(c, &pruneConfig); err != nil {
-		log.Fatalf("Error creating operation from configuration: %v", err)
+		return nil, errors.Wrap(err, "decoding configuration")
 	}
 	return d.makeOperation(pruneConfig)
 }
 
-func (d *pruneDescriptor) makeOperation(config *pruneConfig) operations.Operation {
+func (d *pruneDescriptor) makeOperation(config *pruneConfig) (operations.Operation, error) {
 	var (
 		err       error
 		operation pruneOperation
 	)
 	if operation.action, err = parseAction(config.Action); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	if operation.gracePeriod, err = utils.ParseExtDuration(config.GracePeriod); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	if operation.outdatedThreshold, err = utils.ParseExtDuration(config.OutdatedThreshold); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return &operation
+	return &operation, nil
 }
 
 type pruneOperation struct {
@@ -129,7 +129,7 @@ func (o *pruneOperation) Describe(c *operations.Context, item gh.Item, userData 
 		o.action, *issue.Number, userData.(time.Time).Format(time.RFC3339))
 }
 
-func (o *pruneOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}) {
+func (o *pruneOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
 	// Retrieve comments for that issue since our threshold plus our grace
 	// period plus one day.
 	issue := item.Issue()
@@ -140,7 +140,7 @@ func (o *pruneOperation) Filter(c *operations.Context, item gh.Item) (operations
 		},
 	})
 	if err != nil {
-		log.Fatalf("Error getting comments for issue %d: %v", *issue.Number, err)
+		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve comments for issue #%d", *issue.Number)
 	}
 
 	// Figure out the last time the issue was commented on.
@@ -160,9 +160,9 @@ func (o *pruneOperation) Filter(c *operations.Context, item gh.Item) (operations
 	// retrieve the issues in ascending update order: no more issues will be
 	// accepted after that.
 	if !lastCommented.Add(o.outdatedThreshold.Duration()).Before(time.Now()) {
-		return operations.Terminal, nil
+		return operations.Terminal, nil, nil
 	}
-	return operations.Accept, lastCommented
+	return operations.Accept, lastCommented, nil
 }
 
 func (o *pruneOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {

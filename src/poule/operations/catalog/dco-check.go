@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
@@ -11,6 +10,7 @@ import (
 
 	"github.com/google/go-github/github"
 	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
 
@@ -40,22 +40,22 @@ func (d *dcoCheckDescriptor) CommandLineDescription() CommandLineDescription {
 	}
 }
 
-func (d *dcoCheckDescriptor) OperationFromCli(c *cli.Context) operations.Operation {
+func (d *dcoCheckDescriptor) OperationFromCli(c *cli.Context) (operations.Operation, error) {
 	return &dcoCheckOperation{
 		unsignedLabel: c.String("unsigned-label"),
-	}
+	}, nil
 }
 
-func (d *dcoCheckDescriptor) OperationFromConfig(c operations.Configuration) operations.Operation {
+func (d *dcoCheckDescriptor) OperationFromConfig(c operations.Configuration) (operations.Operation, error) {
 	dcoCheckOperation := &dcoCheckOperation{
 		unsignedLabel: defaultUnsignedLabel,
 	}
 	if len(c) > 0 {
 		if err := mapstructure.Decode(c, &dcoCheckOperation); err != nil {
-			log.Fatalf("Error creating operation from configuration: %v", err)
+			return nil, errors.Wrap(err, "decoding configuration")
 		}
 	}
-	return dcoCheckOperation
+	return dcoCheckOperation, nil
 }
 
 type dcoCheckOperation struct {
@@ -123,12 +123,12 @@ func (o *dcoCheckOperation) Describe(c *operations.Context, item gh.Item, userDa
 	}
 }
 
-func (o *dcoCheckOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}) {
+func (o *dcoCheckOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
 	// Retrieve commits for that pull request.
 	pr := item.PullRequest()
 	commits, _, err := c.Client.PullRequests().ListCommits(c.Username, c.Repository, *pr.Number, nil)
 	if err != nil {
-		log.Fatal(err)
+		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve commits for pull request #%d", *pr.Number)
 	}
 
 	// We take actions on every pull requests:
@@ -143,7 +143,7 @@ func (o *dcoCheckOperation) Filter(c *operations.Context, item gh.Item) (operati
 			break
 		}
 	}
-	return operations.Accept, isSigned
+	return operations.Accept, isSigned, nil
 }
 
 func (o *dcoCheckOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {

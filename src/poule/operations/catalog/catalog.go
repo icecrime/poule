@@ -29,11 +29,11 @@ type OperationDescriptor interface {
 
 	// OperationFromCli returns a new instance of that operations configured as
 	// described by command line flags and arguemnts.
-	OperationFromCli(*cli.Context) operations.Operation
+	OperationFromCli(*cli.Context) (operations.Operation, error)
 
 	// OperationFromConfig returns a new instance of that operation configured
 	// as described by the opaque `operations.Configuration` structure.
-	OperationFromConfig(operations.Configuration) operations.Operation
+	OperationFromConfig(operations.Configuration) (operations.Operation, error)
 }
 
 type OperationDescriptors []OperationDescriptor

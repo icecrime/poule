@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -42,22 +43,39 @@ func makeCommand(descriptor catalog.OperationDescriptor) cli.Command {
 		Name:     clidesc.Name,
 		Usage:    clidesc.Description,
 		Action: func(c *cli.Context) {
-			f, err := settings.ParseCliFilters(c)
-			if err != nil {
-				log.Fatalf("Error parsing CLI: %v", err)
+			if err := executeSingleOperation(c, descriptor); err != nil {
+				fmt.Printf("FATAL: Executing single operation: %v\n", err)
+				os.Exit(1)
 			}
-			runSingleOperation(configuration.FromGlobalFlags(c), descriptor.OperationFromCli(c), f)
 		},
 	}
 }
 
-func runSingleOperation(c *configuration.Config, op operations.Operation, filters []*utils.Filter) {
+func executeSingleOperation(c *cli.Context, descriptor catalog.OperationDescriptor) error {
+	f, err := settings.ParseCliFilters(c)
+	if err != nil {
+		log.Fatalf("Error parsing filters: %v", err)
+	}
+	op, err := descriptor.OperationFromCli(c)
+	if err != nil {
+		log.Fatalf("Error creating %q operation: %v", descriptor.CommandLineDescription().Name, err)
+	}
+	return runSingleOperation(configuration.FromGlobalFlags(c), op, f)
+}
+
+func runSingleOperation(c *configuration.Config, op operations.Operation, filters []*utils.Filter) error {
 	if filterIncludesIssues(filters) && op.Accepts()&operations.Issues == operations.Issues {
-		operations.RunOnIssues(c, op, filters)
+		if err := operations.RunOnIssues(c, op, filters); err != nil {
+			return err
+		}
+
 	}
 	if filterIncludesPullRequests(filters) && op.Accepts()&operations.PullRequests == operations.PullRequests {
-		operations.RunOnPullRequests(c, op, filters)
+		if err := operations.RunOnPullRequests(c, op, filters); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func filterIncludesIssues(filters []*utils.Filter) bool {

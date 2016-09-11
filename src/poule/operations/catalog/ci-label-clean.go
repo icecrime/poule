@@ -2,13 +2,13 @@ package catalog
 
 import (
 	"fmt"
-	"log"
 
 	"poule/gh"
 	"poule/operations"
 	"poule/utils"
 
 	"github.com/google/go-github/github"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
 
@@ -25,12 +25,12 @@ func (d *ciLabelCleanOperationDescriptor) CommandLineDescription() CommandLineDe
 	}
 }
 
-func (d *ciLabelCleanOperationDescriptor) OperationFromCli(*cli.Context) operations.Operation {
-	return &ciLabelCleanOperation{}
+func (d *ciLabelCleanOperationDescriptor) OperationFromCli(*cli.Context) (operations.Operation, error) {
+	return &ciLabelCleanOperation{}, nil
 }
 
-func (d *ciLabelCleanOperationDescriptor) OperationFromConfig(operations.Configuration) operations.Operation {
-	return &ciLabelCleanOperation{}
+func (d *ciLabelCleanOperationDescriptor) OperationFromConfig(operations.Configuration) (operations.Operation, error) {
+	return &ciLabelCleanOperation{}, nil
 }
 
 type ciLabelCleanOperation struct{}
@@ -56,30 +56,30 @@ func (o *ciLabelCleanOperation) Describe(c *operations.Context, item gh.Item, us
 	return ""
 }
 
-func (o *ciLabelCleanOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}) {
+func (o *ciLabelCleanOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
 	// Fetch the issue information for that pull request: that's the only way
 	// to retrieve the labels.
 	pr := item.PullRequest()
 	issue, _, err := c.Client.Issues().Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
 	if err != nil {
-		log.Fatalf("Error getting issue %d: %v", *pr.Number, err)
+		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve issue #%d", *pr.Number)
 	}
 
 	// Skip any issue which doesn't have a label indicating CI failure.
 	if !utils.HasFailingCILabel(issue.Labels) {
-		return operations.Reject, nil
+		return operations.Reject, nil, nil
 	}
 
 	// List all statuses for that item.
 	repoStatuses, _, err := c.Client.Repositories().ListStatuses(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Head.SHA, nil)
 	if err != nil {
-		log.Fatal(err)
+		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve statuses for pull request #%d", *pr.Number)
 	}
 	latestStatuses := utils.GetLatestStatuses(repoStatuses)
 
 	// Include this pull request as part of the filter, and store the failures
 	// information as part of the user data.
-	return operations.Accept, utils.HasFailures(latestStatuses)
+	return operations.Accept, utils.HasFailures(latestStatuses), nil
 }
 
 func (o *ciLabelCleanOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {

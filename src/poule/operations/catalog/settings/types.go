@@ -41,10 +41,13 @@ func NewMultiValuedKeysFromSlice(collection []string) (MultiValuedKeys, error) {
 }
 
 // ForEach calls the provided `fn` function for each key-value pair.
-func (m MultiValuedKeys) ForEach(fn func(key, value string)) {
+func (m MultiValuedKeys) ForEach(fn func(key, value string) error) error {
 	for key, values := range m {
 		for _, value := range values {
-			fn(key, value)
+			if err := fn(key, value); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }

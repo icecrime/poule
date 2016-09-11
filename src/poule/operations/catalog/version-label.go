@@ -25,12 +25,12 @@ func (d *versionLabelDescriptor) CommandLineDescription() CommandLineDescription
 	}
 }
 
-func (d *versionLabelDescriptor) OperationFromCli(*cli.Context) operations.Operation {
-	return &versionLabelOperation{}
+func (d *versionLabelDescriptor) OperationFromCli(*cli.Context) (operations.Operation, error) {
+	return &versionLabelOperation{}, nil
 }
 
-func (d *versionLabelDescriptor) OperationFromConfig(operations.Configuration) operations.Operation {
-	return &versionLabelOperation{}
+func (d *versionLabelDescriptor) OperationFromConfig(operations.Configuration) (operations.Operation, error) {
+	return &versionLabelOperation{}, nil
 }
 
 type versionLabelOperation struct{}
@@ -50,12 +50,12 @@ func (o *versionLabelOperation) Describe(c *operations.Context, item gh.Item, us
 	return fmt.Sprintf("Adding label %q to issue #%d", userData.(string), *issue.Number)
 }
 
-func (o *versionLabelOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}) {
+func (o *versionLabelOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
 	issue := item.Issue()
 	if b, label := extractVersionLabels(issue); b {
-		return operations.Accept, label
+		return operations.Accept, label, nil
 	}
-	return operations.Reject, nil
+	return operations.Reject, nil, nil
 }
 
 func (o *versionLabelOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {
