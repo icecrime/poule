@@ -10,19 +10,19 @@ operations:
     # Functionally equivalent to running:
     #
     #   $> poule --filter is:issue label label \
-    #            --match aufs:"area/storage/aufs"
-    #            --match devicemapper:"area/storage/devicemapper"
-    #            --match overlay:"area/storage/overlay"
+    #            --pattern "area/storage/aufs:aufs"
+    #            --pattern "area/storage/devicemapper:devicemapper:
+    #            --pattern "area/storage/overlay:overlay"
     #
     - type: label
       filters: {
-          ~labels:            [ kind/enhancement, kind/feature ]
+          ~labels: [ kind/enhancement, kind/feature ]
       }
       settings: {
-          matches: {
-              "aufs":         "area/storage/aufs",
-              "devicemapper": "area/storage/devicemapper",
-              "overlay":      "area/storage/overlay"
+          patterns: {
+              area/storage/aufs:         [ "aufs" ]
+              area/storage/devicemapper: [ "devicemapper" ]
+              area/storage/overlay:      [ "overlay" ]
           }
       }
 
@@ -33,7 +33,7 @@ operations:
     #
     - type: prune
       filters: {
-          ~labels:            [ kind/enhancement, kind/feature ]
+          ~labels: [ kind/enhancement, kind/feature ]
       }
       settings: {
           action:             ping,

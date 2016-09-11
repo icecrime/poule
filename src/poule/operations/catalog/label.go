@@ -8,6 +8,7 @@ import (
 
 	"poule/gh"
 	"poule/operations"
+	"poule/operations/catalog/settings"
 
 	"github.com/google/go-github/github"
 	"github.com/mitchellh/mapstructure"
@@ -19,10 +20,8 @@ func init() {
 }
 
 type labelOperationConfig struct {
-	Matches labelMatchDescription `mapstructure:"matches"`
+	Patterns settings.MultiValuedKeys `mapstructure:"patterns"`
 }
-
-type labelMatchDescription map[string]string
 
 type labelDescriptor struct{}
 
@@ -30,25 +29,16 @@ func (d *labelDescriptor) CommandLineDescription() CommandLineDescription {
 	return CommandLineDescription{
 		Name:        "label",
 		Description: "Apply labels to issues and pull requests",
-		Flags: []cli.Flag{
-			cli.StringSliceFlag{
-				Name:  "match",
-				Usage: "apply a label to items which body matches a pattern (format: `PATTERN:LABEL`)",
-			},
-		},
 	}
 }
 
 func (d *labelDescriptor) OperationFromCli(c *cli.Context) operations.Operation {
-	labelOperationConfig := &labelOperationConfig{
-		Matches: map[string]string{},
+	patterns, err := settings.NewMultiValuedKeysFromSlice(c.Args())
+	if err != nil {
+		log.Fatalf("Failed to create \"label\" operation; %v", err)
 	}
-	for _, match := range c.StringSlice("match") {
-		s := strings.SplitN(match, ":", 2)
-		if len(s) != 2 {
-			log.Fatalf("invalid match format %q", match)
-		}
-		labelOperationConfig.Matches[s[0]] = s[1]
+	labelOperationConfig := &labelOperationConfig{
+		Patterns: patterns,
 	}
 	return d.makeOperation(labelOperationConfig)
 }
@@ -62,22 +52,19 @@ func (d *labelDescriptor) OperationFromConfig(c operations.Configuration) operat
 }
 
 func (d *labelDescriptor) makeOperation(config *labelOperationConfig) operations.Operation {
-	operation := &labelOperation{
-		matches: map[*regexp.Regexp]string{},
-	}
-	for pattern, label := range config.Matches {
-		re, err := regexp.Compile(pattern)
+	patterns := map[string][]*regexp.Regexp{}
+	config.Patterns.ForEach(func(key, value string) {
+		re, err := regexp.Compile(value)
 		if err != nil {
-			log.Fatalf("Invalid pattern %q: %v", pattern, err)
+			log.Fatalf("Invalid value %q for pattern: %v", value, err)
 		}
-		operation.matches[re] = label
-
-	}
-	return operation
+		patterns[key] = append(patterns[key], re)
+	})
+	return &labelOperation{patterns: patterns}
 }
 
 type labelOperation struct {
-	matches map[*regexp.Regexp]string
+	patterns map[string][]*regexp.Regexp
 }
 
 func (o *labelOperation) Accepts() operations.AcceptedType {
@@ -94,15 +81,34 @@ func (o *labelOperation) Describe(c *operations.Context, item gh.Item, userData 
 }
 
 func (o *labelOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}) {
-	labels := []string{}
 	itemBody := itemBody(item)
-	for re, label := range o.matches {
-		if re.MatchString(itemBody) {
-			labels = append(labels, label)
+
+	// Try to match all provided regular expressions, and collect the set of
+	// corresponding labels to apply.
+	labelSet := map[string]struct{}{}
+	for label, patterns := range o.patterns {
+		// Skip labels we already are planning to set.
+		if _, ok := labelSet[label]; ok {
+			continue
+		}
+		// Attempt to match all regular expressions.
+		for _, pattern := range patterns {
+			if pattern.MatchString(itemBody) {
+				labelSet[label] = struct{}{}
+				break
+			}
 		}
 	}
-	if len(labels) == 0 {
+
+	// It's unnecessary to go further if there are no labels to apply.
+	if len(labelSet) == 0 {
 		return operations.Reject, nil
+	}
+
+	// Convert the set of unique labels to a string slice.
+	labels := []string{}
+	for key, _ := range labelSet {
+		labels = append(labels, key)
 	}
 	return operations.Accept, labels
 }

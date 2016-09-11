@@ -1,7 +1,6 @@
 package settings
 
 import (
-	"fmt"
 	"strings"
 
 	"poule/utils"
@@ -17,20 +16,16 @@ var FilteringFlag = cli.StringSliceFlag{
 }
 
 func ParseCliFilters(c *cli.Context) ([]*utils.Filter, error) {
-	value := map[string][]string{}
-	for _, filter := range c.StringSlice(filterFlagName) {
-		s := strings.SplitN(filter, ":", 2)
-		if len(s) != 2 {
-			return nil, fmt.Errorf("invalid filter format %q", filter)
-		}
-		value[s[0]] = strings.Split(s[1], ",")
+	value, err := NewMultiValuedKeysFromSlice(c.StringSlice(filterFlagName))
+	if err != nil {
+		return nil, err
 	}
 	return ParseConfigurationFilters(value)
 }
 
-func ParseConfigurationFilters(value map[string][]string) ([]*utils.Filter, error) {
+func ParseConfigurationFilters(values map[string][]string) ([]*utils.Filter, error) {
 	filters := []*utils.Filter{}
-	for filterType, value := range value {
+	for filterType, value := range values {
 		filter, err := utils.MakeFilter(filterType, strings.Join(value, ","))
 		if err != nil {
 			return []*utils.Filter{}, err
