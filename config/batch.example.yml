@@ -16,13 +16,18 @@ operations:
     #
     - type: label
       filters: {
-          ~labels: [ kind/enhancement, kind/feature ]
+          is:      "issue",
+          ~labels: [ kind/enhancement, kind/feature ],
       }
       settings: {
           patterns: {
-              area/storage/aufs:         [ "aufs" ]
-              area/storage/devicemapper: [ "devicemapper" ]
-              area/storage/overlay:      [ "overlay" ]
+              area/builder:      [ "dockerfile", "docker build" ],
+              area/distribution: [ "docker login", "docker logout", "docker pull", "docker push", "docker search" ],
+              area/plugin:       [ "docker plugin" ],
+              area/network:      [ "docker network", "ipvs", "vxlan" ],
+              area/runtime:      [ "oci runtime error" ],
+              area/swarm:        [ "docker node", "docker service", "docker swarm" ],
+              platform/windows:  [ "nanoserver", "windowsservercore", "windows server" ],
           }
       }
 
@@ -33,12 +38,12 @@ operations:
     #
     - type: prune
       filters: {
-          ~labels: [ kind/enhancement, kind/feature ]
+          ~labels: [ kind/enhancement, kind/feature ],
       }
       settings: {
           action:             ping,
           grace-period:       2w,
-          outdated-threshold: 3m
+          outdated-threshold: 3m,
       }
 
     # Functionally equivalent to running:
@@ -49,6 +54,6 @@ operations:
       settings: {
           configurations: [
               experimental,
-              win2lin
+              win2lin,
           ]
       }

@@ -94,7 +94,7 @@ func (o *labelOperation) Filter(c *operations.Context, item gh.Item) (operations
 		}
 		// Attempt to match all regular expressions.
 		for _, pattern := range patterns {
-			if pattern.MatchString(item.Body()) {
+			if pattern.MatchString(strings.ToLower(item.Body())) {
 				labelSet[label] = struct{}{}
 				break
 			}

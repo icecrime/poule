@@ -51,3 +51,18 @@ func (m MultiValuedKeys) ForEach(fn func(key, value string) error) error {
 	}
 	return nil
 }
+
+// ToSerializedFormat transforms a MultiValuedKeys into its serialized
+// representation, where single values are represented by a string rather than
+// a slice of length 1.
+func (m MultiValuedKeys) ToSerializedFormat() map[string]interface{} {
+	res := map[string]interface{}{}
+	for key, values := range m {
+		if len(values) == 1 {
+			res[key] = values[0]
+		} else {
+			res[key] = values
+		}
+	}
+	return res
+}

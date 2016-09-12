@@ -81,7 +81,7 @@ type batchConfiguration struct {
 
 type operationConfiguration struct {
 	Type     string                   `yaml:"type"`
-	Filters  map[string][]string      `yaml:"filters"`
+	Filters  map[string]interface{}   `yaml:"filters"`
 	Settings operations.Configuration `yaml:"settings"`
 }
 

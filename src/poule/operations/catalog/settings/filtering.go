@@ -27,15 +27,19 @@ func ParseCliFilters(c *cli.Context) ([]*Filter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ParseConfigurationFilters(value)
+	return ParseConfigurationFilters(value.ToSerializedFormat())
 }
 
 // ParseConfigurationFilters reads filter definitions from the serialized
 // configuration format.
-func ParseConfigurationFilters(values map[string][]string) ([]*Filter, error) {
+func ParseConfigurationFilters(values map[string]interface{}) ([]*Filter, error) {
 	filters := []*Filter{}
-	for filterType, value := range values {
-		filter, err := MakeFilter(filterType, strings.Join(value, ","))
+	for filterType, rawValue := range values {
+		value, err := filterValue(rawValue)
+		if err != nil {
+			return []*Filter{}, err
+		}
+		filter, err := MakeFilter(filterType, value)
 		if err != nil {
 			return []*Filter{}, err
 		}
@@ -232,9 +236,35 @@ func hasAllLabels(labels []string, issueLabels []github.Label) bool {
 	return true
 }
 
-// Type conversion utility.
+// Type conversion utilities.
+
 func asFilter(impl interface{}) *Filter {
 	return &Filter{
 		Strategy: impl,
 	}
+}
+
+func filterValue(value interface{}) (string, error) {
+	// When value is a string, return it directly.
+	if s, ok := value.(string); ok {
+		return s, nil
+	}
+	// When value is a []interface{}, convert it into a []string.
+	if s, ok := value.([]interface{}); ok {
+		strslice := []string{}
+		for _, v := range s {
+			if str, ok := v.(string); ok {
+				strslice = append(strslice, str)
+			} else {
+				return "", errors.Errorf("non-string \"%v\" in filter value", v)
+			}
+		}
+		value = strslice
+	}
+	// When value is a []string, return the result of a strings.Join.
+	if s, ok := value.([]string); ok {
+		return strings.Join(s, ","), nil
+	}
+	// Anything else is an error.
+	return "", errors.Errorf("invalid data type \"%#v\" for filter value", value)
 }
