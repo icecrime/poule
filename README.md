@@ -1,33 +1,46 @@
 Poule
 =====
 
-```
-NAME:
-   poule - Mass interact with GitHub pull requests
+# /!\ Work in progress /!\
 
-USAGE:
-   poule [global options] command [command options] [arguments...]
-   
-VERSION:
-   0.1.0
-   
-COMMANDS:
-    audit       audit github jobs failure
-    clean       clean github failure labels
-    rebuild     rebuild failed jobs
+# Description
 
-GLOBAL OPTIONS:
-   --repository         GitHub repository
-   --token              GitHub API token
-   --token-file         GitHub API token file
-   --help, -h           show help
-   --version, -v        print the version
+:chicken: Poule is a tool that helps automating tasks on GitHub issues and pull
+requests. The intent is to implement the behavior to automate once, and to be
+able to run it in three different contexts:
+
+  1. As a one-time operation, on the entire stock of GitHub items.
+  2. As part of a batch job alongside multiple other operations.
+  3. As part of a long-running job, triggered by GitHub webhooks.
+
+## 1. One-time operations
+
+Example:
+
+```bash
+$> poule --repository docker/docker --token-file ~/.gitthub-token --dry-run=true dco-check --filter is:pr
 ```
 
-# Examples
+## 2. Batch job
 
-Rebuild job `foo` for all opened pull requests:
+Example:
 
+```bash
+$> cat dco-check.yml
+dry-run:    True
+repository: docker/docker
+
+# A list of operations to run as part of the batch job.
+operations:
+
+    - type: dco-check
+      filters: {
+          is: "pr",
+      }
+
+$> poule batch dco-check.yml
 ```
-LEEROY_USERNAME=user LEEROY_PASS=pass poule --repository "docker/docker" --token-file /home/icecrime/.github rebuild foo
-```
+
+## 3. Long running job
+
+TBD

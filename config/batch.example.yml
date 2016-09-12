@@ -9,15 +9,13 @@ operations:
 
     # Functionally equivalent to running:
     #
-    #   $> poule --filter is:issue label label \
-    #            --pattern "area/storage/aufs:aufs"
-    #            --pattern "area/storage/devicemapper:devicemapper:
-    #            --pattern "area/storage/overlay:overlay"
+    #   $> poule --filter is:issue label \
+    #            --pattern "area/builder:dockerfile,docker build"
+    #            --pattern ...
     #
     - type: label
       filters: {
-          is:      "issue",
-          ~labels: [ kind/enhancement, kind/feature ],
+          is: "issue",
       }
       settings: {
           patterns: {
