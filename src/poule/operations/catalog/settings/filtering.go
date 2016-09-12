@@ -55,11 +55,11 @@ func (f *Filter) Apply(item gh.Item) bool {
 	switch {
 	case item.IsIssue():
 		if f, ok := f.Strategy.(issueFilter); ok {
-			return f.ApplyIssue(item.Issue())
+			return f.ApplyIssue(item.Issue)
 		}
 	case item.IsPullRequest():
 		if f, ok := f.Strategy.(pullRequestFilter); ok {
-			return f.ApplyPullRequest(item.PullRequest())
+			return f.ApplyPullRequest(item.PullRequest)
 		}
 	default:
 		panic("unreachable")

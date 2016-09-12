@@ -50,15 +50,14 @@ func (o *ciLabelAuditOperation) Apply(c *operations.Context, item gh.Item, userD
 }
 
 func (o *ciLabelAuditOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
-	pr := item.PullRequest()
 	ud := userData.(ciLabelAuditOperationUserData)
 	// Failing CI label but no CI failures: this is inconsistent.
 	if ud.hasFailingCILabel && !ud.hasFailures {
-		return fmt.Sprintf("PR#%d is labeled %q but has no failures", *pr.Number, configuration.FailingCILabel)
+		return fmt.Sprintf("Pull request #%d is labeled %q but has no failures", item.Number(), configuration.FailingCILabel)
 	}
 	// No failing CI label with CI failures: this is inconsistent.
 	if !ud.hasFailingCILabel && ud.hasFailures {
-		return fmt.Sprintf("PR#%d is not labeled %q but has failures", *pr.Number, configuration.FailingCILabel)
+		return fmt.Sprintf("Pull request #%d is not labeled %q but has failures", item.Number(), configuration.FailingCILabel)
 	}
 	// The pull request has a consistent combination of labels and failures.
 	return ""
@@ -66,14 +65,14 @@ func (o *ciLabelAuditOperation) Describe(c *operations.Context, item gh.Item, us
 
 func (o *ciLabelAuditOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
 	// Exclude all pull requests which cannot be merged (e.g., rebase needed).
-	pr := item.PullRequest()
+	pr := item.PullRequest
 	if pr.Mergeable != nil && !*pr.Mergeable {
 		return operations.Reject, nil, nil
 	}
 
 	// Fetch the issue information for that pull request: that's the only way
 	// to retrieve the labels.
-	issue, _, err := c.Client.Issues().Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
+	issue, err := item.GetRelatedIssue(c.Client)
 	if err != nil {
 		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve issue #%d", *pr.Number)
 	}

@@ -40,18 +40,18 @@ func (o *versionLabelOperation) Accepts() operations.AcceptedType {
 }
 
 func (o *versionLabelOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
-	issue := item.Issue()
+	issue := item.Issue
 	_, _, err := c.Client.Issues().AddLabelsToIssue(c.Username, c.Repository, *issue.Number, []string{userData.(string)})
 	return err
 }
 
 func (o *versionLabelOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
-	issue := item.Issue()
+	issue := item.Issue
 	return fmt.Sprintf("Adding label %q to issue #%d", userData.(string), *issue.Number)
 }
 
 func (o *versionLabelOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
-	issue := item.Issue()
+	issue := item.Issue
 	if b, label := extractVersionLabels(issue); b {
 		return operations.Accept, label, nil
 	}

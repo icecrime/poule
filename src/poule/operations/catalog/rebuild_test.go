@@ -67,7 +67,7 @@ func TestRebuild(t *testing.T) {
 	clt.MockRepositories.On("ListStatuses", ctx.Username, ctx.Repository, commitSHA, (*github.ListOptions)(nil)).Return(repoStatuses, nil, nil)
 
 	// Call into the operation.
-	item := gh.MakeItem(pullr)
+	item := gh.MakePullRequestItem(pullr)
 	res, userData, err := operation.Filter(ctx, item)
 	if err != nil {
 		t.Fatalf("Filter returned unexpected error %v", err)
@@ -92,7 +92,7 @@ func TestRebuildSkipFailing(t *testing.T) {
 	clt.MockIssues.On("Get", ctx.Username, ctx.Repository, test.IssueNumber).Return(issue, nil, nil)
 
 	// Call into the operation.
-	item := gh.MakeItem(pullr)
+	item := gh.MakePullRequestItem(pullr)
 	if res, _, err := operation.Filter(ctx, item); err != nil {
 		t.Fatalf("Filter returned unexpected error %v", err)
 	} else if res != operations.Reject {

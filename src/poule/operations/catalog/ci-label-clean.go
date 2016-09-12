@@ -42,7 +42,7 @@ func (o *ciLabelCleanOperation) Accepts() operations.AcceptedType {
 func (o *ciLabelCleanOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
 	var err error
 	if hasFailures := userData.(bool); hasFailures {
-		pr := item.PullRequest()
+		pr := item.PullRequest
 		_, err = c.Client.Issues().RemoveLabelForIssue(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number, configuration.FailingCILabel)
 	}
 	return err
@@ -50,8 +50,7 @@ func (o *ciLabelCleanOperation) Apply(c *operations.Context, item gh.Item, userD
 
 func (o *ciLabelCleanOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
 	if hasFailures := userData.(bool); hasFailures {
-		pr := item.PullRequest()
-		return fmt.Sprintf("Removing label %q from pull request #%d", configuration.FailingCILabel, *pr.Number)
+		return fmt.Sprintf("Removing label %q from pull request #%d", configuration.FailingCILabel, item.Number())
 	}
 	return ""
 }
@@ -59,14 +58,13 @@ func (o *ciLabelCleanOperation) Describe(c *operations.Context, item gh.Item, us
 func (o *ciLabelCleanOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
 	// Fetch the issue information for that pull request: that's the only way
 	// to retrieve the labels.
-	pr := item.PullRequest()
-	issue, _, err := c.Client.Issues().Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
-	if err != nil {
-		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve issue #%d", *pr.Number)
+	pr := item.PullRequest
+	if _, err := item.GetRelatedIssue(c.Client); err != nil {
+		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve issue #%d", item.Number())
 	}
 
 	// Skip any issue which doesn't have a label indicating CI failure.
-	if !gh.HasFailingCILabel(issue.Labels) {
+	if !gh.HasFailingCILabel(item.Issue.Labels) {
 		return operations.Reject, nil, nil
 	}
 

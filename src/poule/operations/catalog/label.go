@@ -75,17 +75,15 @@ func (o *labelOperation) Accepts() operations.AcceptedType {
 }
 
 func (o *labelOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
-	_, _, err := c.Client.Issues().AddLabelsToIssue(c.Username, c.Repository, itemNumber(item), []string{userData.(string)})
+	_, _, err := c.Client.Issues().AddLabelsToIssue(c.Username, c.Repository, item.Number(), []string{userData.(string)})
 	return err
 }
 
 func (o *labelOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
-	return fmt.Sprintf("Adding labels %s to item #%d", strings.Join(userData.([]string), ", "), itemNumber(item))
+	return fmt.Sprintf("Adding labels %s to item #%d", strings.Join(userData.([]string), ", "), item.Number())
 }
 
 func (o *labelOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
-	itemBody := itemBody(item)
-
 	// Try to match all provided regular expressions, and collect the set of
 	// corresponding labels to apply.
 	labelSet := map[string]struct{}{}
@@ -96,7 +94,7 @@ func (o *labelOperation) Filter(c *operations.Context, item gh.Item) (operations
 		}
 		// Attempt to match all regular expressions.
 		for _, pattern := range patterns {
-			if pattern.MatchString(itemBody) {
+			if pattern.MatchString(item.Body()) {
 				labelSet[label] = struct{}{}
 				break
 			}
@@ -131,27 +129,5 @@ func (o *labelOperation) PullRequestListOptions(c *operations.Context) *github.P
 		ListOptions: github.ListOptions{
 			PerPage: 200,
 		},
-	}
-}
-
-func itemBody(item gh.Item) string {
-	switch {
-	case item.IsIssue():
-		return *item.Issue().Body
-	case item.IsPullRequest():
-		return *item.PullRequest().Body
-	default:
-		panic("unreachable")
-	}
-}
-
-func itemNumber(item gh.Item) int {
-	switch {
-	case item.IsIssue():
-		return *item.Issue().Number
-	case item.IsPullRequest():
-		return *item.PullRequest().Number
-	default:
-		panic("unreachable")
 	}
 }

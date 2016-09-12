@@ -97,7 +97,7 @@ func (o *pruneOperation) Accepts() operations.AcceptedType {
 }
 
 func (o *pruneOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
-	issue := item.Issue()
+	issue := item.Issue
 	switch o.action {
 	case "close":
 		// TODO Find the last ping/warn message, and take the grace period into account.
@@ -125,7 +125,7 @@ func (o *pruneOperation) Apply(c *operations.Context, item gh.Item, userData int
 }
 
 func (o *pruneOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
-	issue := item.Issue()
+	issue := item.Issue
 	return fmt.Sprintf("Execute %s action on issue #%d (last commented on %s)",
 		o.action, *issue.Number, userData.(time.Time).Format(time.RFC3339))
 }
@@ -133,7 +133,7 @@ func (o *pruneOperation) Describe(c *operations.Context, item gh.Item, userData 
 func (o *pruneOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
 	// Retrieve comments for that issue since our threshold plus our grace
 	// period plus one day.
-	issue := item.Issue()
+	issue := item.Issue
 	comments, _, err := c.Client.Issues().ListComments(c.Username, c.Repository, *issue.Number, &github.IssueListCommentsOptions{
 		Since: time.Now().Add(-1*o.outdatedThreshold.Duration()).Add(-1*o.gracePeriod.Duration()).AddDate(0, 0, -1),
 		ListOptions: github.ListOptions{

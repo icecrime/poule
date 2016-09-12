@@ -19,7 +19,7 @@ type IssueBuilder struct {
 }
 
 func (p *IssueBuilder) Item() gh.Item {
-	return gh.MakeItem(p.Value)
+	return gh.MakeIssueItem(p.Value)
 }
 
 func (p *IssueBuilder) Body(body string) *IssueBuilder {

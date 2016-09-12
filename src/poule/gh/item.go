@@ -1,34 +1,99 @@
 package gh
 
-import "github.com/google/go-github/github"
+import (
+	"github.com/google/go-github/github"
+	"github.com/pkg/errors"
+)
 
 // Item is a union type that can encapsulate either a github.Issue or a
 // github.PullRequest. This allows to have a single Operation interface and let
 // the implementation handle according to its capabilities.
 type Item struct {
-	item interface{}
+	Issue       *github.Issue
+	PullRequest *github.PullRequest
 }
 
-func MakeItem(item interface{}) Item {
+// MakeIssueItem create an Item wrapper around a GitHub issue.
+func MakeIssueItem(issue *github.Issue) Item {
 	return Item{
-		item: item,
+		Issue: issue,
 	}
 }
 
-func (i *Item) IsIssue() bool {
-	_, ok := i.item.(*github.Issue)
-	return ok
+// MakeIssueItem create an Item wrapper around a GitHub pull request.
+func MakePullRequestItem(pullRequest *github.PullRequest) Item {
+	return Item{
+		PullRequest: pullRequest,
+	}
 }
 
-func (i *Item) Issue() *github.Issue {
-	return i.item.(*github.Issue)
+// IsIssue returns whether the item is strictly a GitHub issue (i.e., not the
+// issue object of a corresponding pull request).
+func (i Item) IsIssue() bool {
+	// The `Issue` field can be non-nil even in the case of a pull request, as
+	// we may have fetched the related issue object (for example to retrieve
+	// labels).
+	return i.PullRequest == nil
 }
 
-func (i *Item) IsPullRequest() bool {
-	_, ok := i.item.(*github.PullRequest)
-	return ok
+// IsPullRequest returns whether the item is a GitHub pull request.
+func (i Item) IsPullRequest() bool {
+	return i.PullRequest != nil
 }
 
-func (i *Item) PullRequest() *github.PullRequest {
-	return i.item.(*github.PullRequest)
+// Body returns the text body of the item.
+func (i Item) Body() string {
+	switch {
+	case i.Issue != nil:
+		return *i.Issue.Body
+	case i.PullRequest != nil:
+		return *i.PullRequest.Body
+	default:
+		panic("uninitialized item")
+	}
+}
+
+// Number returns the number of the item.
+func (i *Item) Number() int {
+	switch {
+	case i.Issue != nil:
+		return *i.Issue.Number
+	case i.PullRequest != nil:
+		return *i.PullRequest.Number
+	default:
+		panic("uninitialized item")
+	}
+}
+
+// Title returns the title of the item.
+func (i *Item) Title() string {
+	switch {
+	case i.Issue != nil:
+		return *i.Issue.Title
+	case i.PullRequest != nil:
+		return *i.PullRequest.Title
+	default:
+		panic("uninitialized item")
+	}
+}
+
+// GetRelatedIssue retrieves and return the GitHub issue related to a pull
+// request. This function will fail when called on a GitHub issue.
+func (i *Item) GetRelatedIssue(client Client) (*github.Issue, error) {
+	if i.Issue != nil {
+		return i.Issue, nil
+	} else if i.IsIssue() {
+		return nil, errors.Errorf("GetRelatedIssue called on an issue")
+	}
+
+	issue, _, err := client.Issues().Get(
+		*i.PullRequest.Base.Repo.Owner.Login,
+		*i.PullRequest.Base.Repo.Name,
+		*i.PullRequest.Number,
+	)
+	if err != nil {
+		return nil, err
+	}
+	i.Issue = issue
+	return i.Issue, nil
 }

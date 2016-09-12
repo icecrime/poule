@@ -71,7 +71,7 @@ func (o *dcoCheckOperation) Apply(c *operations.Context, item gh.Item, userData 
 		true:  o.applySigned,
 		false: o.applyUnsigned,
 	}
-	return fnMapping[userData.(bool)](c, item.PullRequest())
+	return fnMapping[userData.(bool)](c, item.PullRequest)
 }
 
 func (o *dcoCheckOperation) applySigned(c *operations.Context, pr *github.PullRequest) error {
@@ -115,7 +115,7 @@ func (o *dcoCheckOperation) applyUnsigned(c *operations.Context, pr *github.Pull
 }
 
 func (o *dcoCheckOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
-	pr := item.PullRequest()
+	pr := item.PullRequest
 	if isSigned := userData.(bool); isSigned {
 		return fmt.Sprintf("Pull request #%d is signed: label %q and explanation comment will be removed", *pr.Number, o.unsignedLabel)
 	} else {
@@ -125,7 +125,7 @@ func (o *dcoCheckOperation) Describe(c *operations.Context, item gh.Item, userDa
 
 func (o *dcoCheckOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
 	// Retrieve commits for that pull request.
-	pr := item.PullRequest()
+	pr := item.PullRequest
 	commits, _, err := c.Client.PullRequests().ListCommits(c.Username, c.Repository, *pr.Number, nil)
 	if err != nil {
 		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve commits for pull request #%d", *pr.Number)

@@ -66,7 +66,7 @@ func (o *prRebuildOperation) Accepts() operations.AcceptedType {
 }
 
 func (o *prRebuildOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
-	pr := item.PullRequest()
+	pr := item.PullRequest
 	for _, context := range userData.([]string) {
 		if err := o.Builder(pr, context); err != nil {
 			return fmt.Errorf("error rebuilding pull request %d: %v", *pr.Number, err)
@@ -76,25 +76,23 @@ func (o *prRebuildOperation) Apply(c *operations.Context, item gh.Item, userData
 }
 
 func (o *prRebuildOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
-	pr := item.PullRequest()
 	contexts := userData.([]string)
 	if len(contexts) == 0 {
 		return ""
 	}
-	return fmt.Sprintf("Rebuilding pull request #%d for %s", *pr.Number, strings.Join(contexts, ", "))
+	return fmt.Sprintf("Rebuilding pull request #%d for %s", item.Number(), strings.Join(contexts, ", "))
 }
 
 func (o *prRebuildOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
 	// Fetch the issue information for that pull request: that's the only way
 	// to retrieve the labels.
-	pr := item.PullRequest()
-	issue, _, err := c.Client.Issues().Get(*pr.Base.Repo.Owner.Login, *pr.Base.Repo.Name, *pr.Number)
-	if err != nil {
+	pr := item.PullRequest
+	if _, err := item.GetRelatedIssue(c.Client); err != nil {
 		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve issue #%d", *pr.Number)
 	}
 
 	// Skip all pull requests which are known to fail CI.
-	if gh.HasFailingCILabel(issue.Labels) {
+	if gh.HasFailingCILabel(item.Issue.Labels) {
 		return operations.Reject, nil, nil
 	}
 

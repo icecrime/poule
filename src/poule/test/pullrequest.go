@@ -19,7 +19,7 @@ type PullRequestBuilder struct {
 }
 
 func (p *PullRequestBuilder) Item() gh.Item {
-	return gh.MakeItem(p.Value)
+	return gh.MakePullRequestItem(p.Value)
 }
 
 func (p *PullRequestBuilder) BaseBranch(username, repository, SHA string) *PullRequestBuilder {

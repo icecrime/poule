@@ -33,7 +33,7 @@ func (r *IssueRunner) ListItems(context *Context, op Operation, page int) ([]gh.
 	// Convert the result to items.
 	items := []gh.Item{}
 	for i, _ := range issues {
-		items = append(items, gh.MakeItem(&issues[i]))
+		items = append(items, gh.MakeIssueItem(&issues[i]))
 	}
 	return items, resp, err
 }
@@ -55,7 +55,7 @@ func (r *PullRequestRunner) ListItems(context *Context, op Operation, page int) 
 	// Convert the result to items.
 	items := []gh.Item{}
 	for i, _ := range prs {
-		items = append(items, gh.MakeItem(&prs[i]))
+		items = append(items, gh.MakePullRequestItem(&prs[i]))
 	}
 	return items, resp, err
 }
