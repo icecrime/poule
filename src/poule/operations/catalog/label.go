@@ -3,6 +3,7 @@ package catalog
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"poule/gh"
@@ -28,7 +29,7 @@ type labelDescriptor struct{}
 func (d *labelDescriptor) CommandLineDescription() CommandLineDescription {
 	return CommandLineDescription{
 		Name:        "label",
-		Description: "Apply label(s) to items which body matches a pattern",
+		Description: "Apply label(s) to items which title or body matches a pattern",
 		ArgsUsage:   "label=pattern[,pattern...]...",
 	}
 }
@@ -42,7 +43,7 @@ func (d *labelDescriptor) OperationFromCli(c *cli.Context) (operations.Operation
 		return nil, errors.Wrap(err, "parsing command line")
 	}
 	labelOperationConfig := &labelOperationConfig{Patterns: patterns}
-	return d.makeOperation(labelOperationConfig)
+	return d.makeLabelOperation(labelOperationConfig)
 }
 
 func (d *labelDescriptor) OperationFromConfig(c operations.Configuration) (operations.Operation, error) {
@@ -50,10 +51,10 @@ func (d *labelDescriptor) OperationFromConfig(c operations.Configuration) (opera
 	if err := mapstructure.Decode(c, &labelOperationConfig); err != nil {
 		return nil, errors.Wrap(err, "decoding configuration")
 	}
-	return d.makeOperation(labelOperationConfig)
+	return d.makeLabelOperation(labelOperationConfig)
 }
 
-func (d *labelDescriptor) makeOperation(config *labelOperationConfig) (operations.Operation, error) {
+func (d *labelDescriptor) makeLabelOperation(config *labelOperationConfig) (operations.Operation, error) {
 	patterns := map[string][]*regexp.Regexp{}
 	err := config.Patterns.ForEach(func(key, value string) error {
 		re, err := regexp.Compile(value)
@@ -75,7 +76,9 @@ func (o *labelOperation) Accepts() operations.AcceptedType {
 }
 
 func (o *labelOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
-	_, _, err := c.Client.Issues().AddLabelsToIssue(c.Username, c.Repository, item.Number(), []string{userData.(string)})
+	labels := userData.([]string)
+	sort.Strings(labels) // Not necessary, but useful for testing
+	_, _, err := c.Client.Issues().AddLabelsToIssue(c.Username, c.Repository, item.Number(), labels)
 	return err
 }
 
@@ -93,10 +96,13 @@ func (o *labelOperation) Filter(c *operations.Context, item gh.Item) (operations
 			continue
 		}
 		// Attempt to match all regular expressions.
+	PatternLoop:
 		for _, pattern := range patterns {
-			if pattern.MatchString(strings.ToLower(item.Body())) {
-				labelSet[label] = struct{}{}
-				break
+			for _, candidate := range []string{item.Title(), item.Body()} {
+				if pattern.MatchString(strings.ToLower(candidate)) {
+					labelSet[label] = struct{}{}
+					break PatternLoop
+				}
 			}
 		}
 	}

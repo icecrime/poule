@@ -21,13 +21,16 @@ operations:
       }
       settings: {
           patterns: {
-              area/builder:      [ "dockerfile", "docker build" ],
-              area/distribution: [ "docker login", "docker logout", "docker pull", "docker push", "docker search" ],
-              area/plugin:       [ "docker plugin" ],
-              area/network:      [ "docker network", "ipvs", "vxlan" ],
-              area/runtime:      [ "oci runtime error" ],
-              area/swarm:        [ "docker node", "docker service", "docker swarm" ],
-              platform/windows:  [ "nanoserver", "windowsservercore", "windows server" ],
+              area/builder:        [ "dockerfile", "docker build" ],
+              area/distribution:   [ "docker login", "docker logout", "docker pull", "docker push", "docker search" ],
+              area/plugin:         [ "docker plugin" ],
+              area/network:        [ "docker network", "ipvs", "vxlan" ],
+              area/runtime:        [ "oci runtime error" ],
+              area/security/trust: [ "docker_content_trust" ],
+              area/swarm:          [ "docker node", "docker service", "docker swarm" ],
+              platform/desktop:    [ "docker for mac", "docker for windows" ],
+              platform/freebsd:    [ "freebsd" ],
+              platform/windows:    [ "nanoserver", "windowsservercore", "windows server" ],
           }
       }
 

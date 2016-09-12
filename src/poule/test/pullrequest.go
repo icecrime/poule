@@ -36,6 +36,11 @@ func (p *PullRequestBuilder) BaseBranch(username, repository, SHA string) *PullR
 	return p
 }
 
+func (p *PullRequestBuilder) Body(body string) *PullRequestBuilder {
+	p.Value.Body = MakeString(body)
+	return p
+}
+
 func (p *PullRequestBuilder) HeadBranch(username, repository, SHA string) *PullRequestBuilder {
 	p.Value.Head = &github.PullRequestBranch{
 		Repo: &github.Repository{
@@ -52,5 +57,10 @@ func (p *PullRequestBuilder) HeadBranch(username, repository, SHA string) *PullR
 
 func (p *PullRequestBuilder) Number(number int) *PullRequestBuilder {
 	p.Value.Number = MakeInt(number)
+	return p
+}
+
+func (p *PullRequestBuilder) Title(title string) *PullRequestBuilder {
+	p.Value.Title = MakeString(title)
 	return p
 }
