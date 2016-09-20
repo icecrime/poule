@@ -44,7 +44,7 @@ func TestRebuild(t *testing.T) {
 	issue := test.NewIssueBuilder(test.IssueNumber).Value
 	pullr := test.NewPullRequestBuilder(test.IssueNumber).
 		HeadBranch(ctx.Username, ctx.Repository, commitSHA).
-		BaseBranch(ctx.Username, ctx.Repository, test.CommitSHA).Value
+		BaseBranch(ctx.Username, ctx.Repository, test.CommitSHA[0]).Value
 	clt.MockIssues.On("Get", ctx.Username, ctx.Repository, test.IssueNumber).Return(issue, nil, nil)
 
 	// Mock GitHub API replies to issue and statuses retrieval. We expect that
@@ -88,7 +88,7 @@ func TestRebuildSkipFailing(t *testing.T) {
 
 	// Create test pull request and related issue object.
 	issue := test.NewIssueBuilder(test.IssueNumber).Labels([]string{configuration.FailingCILabel}).Value
-	pullr := test.NewPullRequestBuilder(test.IssueNumber).BaseBranch(ctx.Username, ctx.Repository, test.CommitSHA).Value
+	pullr := test.NewPullRequestBuilder(test.IssueNumber).BaseBranch(ctx.Username, ctx.Repository, test.CommitSHA[0]).Value
 	clt.MockIssues.On("Get", ctx.Username, ctx.Repository, test.IssueNumber).Return(issue, nil, nil)
 
 	// Call into the operation.

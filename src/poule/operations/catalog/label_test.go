@@ -48,4 +48,5 @@ func TestLabel(t *testing.T) {
 	if err := op.Apply(ctx, item, userData); err != nil {
 		t.Fatalf("Apply returned unexpected error %v", err)
 	}
+	clt.MockIssues.AssertExpectations(t)
 }

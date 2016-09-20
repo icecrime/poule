@@ -42,13 +42,13 @@ func (d *dcoCheckDescriptor) CommandLineDescription() CommandLineDescription {
 
 func (d *dcoCheckDescriptor) OperationFromCli(c *cli.Context) (operations.Operation, error) {
 	return &dcoCheckOperation{
-		unsignedLabel: c.String("unsigned-label"),
+		UnsignedLabel: c.String("unsigned-label"),
 	}, nil
 }
 
 func (d *dcoCheckDescriptor) OperationFromConfig(c operations.Configuration) (operations.Operation, error) {
 	dcoCheckOperation := &dcoCheckOperation{
-		unsignedLabel: defaultUnsignedLabel,
+		UnsignedLabel: defaultUnsignedLabel,
 	}
 	if len(c) > 0 {
 		if err := mapstructure.Decode(c, &dcoCheckOperation); err != nil {
@@ -59,7 +59,7 @@ func (d *dcoCheckDescriptor) OperationFromConfig(c operations.Configuration) (op
 }
 
 type dcoCheckOperation struct {
-	unsignedLabel string `mapstructure:"unsigned-label"`
+	UnsignedLabel string `mapstructure:"unsigned-label"`
 }
 
 func (o *dcoCheckOperation) Accepts() operations.AcceptedType {
@@ -76,15 +76,17 @@ func (o *dcoCheckOperation) Apply(c *operations.Context, item gh.Item, userData 
 
 func (o *dcoCheckOperation) applySigned(c *operations.Context, pr *github.PullRequest) error {
 	// Remove the DCO unsigned label.
-	if err := toggleDCOLabel(c, pr, false, o.unsignedLabel); err != nil {
+	if err := toggleDCOLabel(c, pr, false, o.UnsignedLabel); err != nil {
 		return err
 	}
 
 	// Delete the automated DCO comment (if any).
-	if automatedComment, err := findDCOComment(c, pr); err != nil {
+	automatedComments, err := findDCOComments(c, pr)
+	if err != nil {
 		return err
-	} else if automatedComment != nil {
-		if _, err := c.Client.PullRequests().DeleteComment(c.Username, c.Repository, *automatedComment.ID); err != nil {
+	}
+	for _, comment := range automatedComments {
+		if _, err := c.Client.PullRequests().DeleteComment(c.Username, c.Repository, *comment.ID); err != nil {
 			return err
 		}
 	}
@@ -93,15 +95,15 @@ func (o *dcoCheckOperation) applySigned(c *operations.Context, pr *github.PullRe
 
 func (o *dcoCheckOperation) applyUnsigned(c *operations.Context, pr *github.PullRequest) error {
 	// Add the DCO unsigned label.
-	if err := toggleDCOLabel(c, pr, true, o.unsignedLabel); err != nil {
+	if err := toggleDCOLabel(c, pr, true, o.UnsignedLabel); err != nil {
 		return err
 	}
 
 	// Create the automated comment for that pull request, unless there is
 	// already one.
-	if automatedComment, err := findDCOComment(c, pr); err != nil {
+	if automatedComments, err := findDCOComments(c, pr); err != nil {
 		return err
-	} else if automatedComment != nil {
+	} else if len(automatedComments) != 0 {
 		return nil
 	}
 
@@ -117,9 +119,9 @@ func (o *dcoCheckOperation) applyUnsigned(c *operations.Context, pr *github.Pull
 func (o *dcoCheckOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
 	pr := item.PullRequest
 	if isSigned := userData.(bool); isSigned {
-		return fmt.Sprintf("Pull request #%d is signed: label %q and explanation comment will be removed", *pr.Number, o.unsignedLabel)
+		return fmt.Sprintf("Pull request #%d is signed: label %q and explanation comment will be removed", *pr.Number, o.UnsignedLabel)
 	} else {
-		return fmt.Sprintf("Pull request #%d is unsigned: label %q and explanation comment will be added", *pr.Number, o.unsignedLabel)
+		return fmt.Sprintf("Pull request #%d is unsigned: label %q and explanation comment will be added", *pr.Number, o.UnsignedLabel)
 	}
 }
 
@@ -160,7 +162,7 @@ func (o *dcoCheckOperation) PullRequestListOptions(c *operations.Context) *githu
 	}
 }
 
-func findDCOComment(c *operations.Context, pr *github.PullRequest) (*github.PullRequestComment, error) {
+func findDCOComments(c *operations.Context, pr *github.PullRequest) ([]*github.PullRequestComment, error) {
 	// Retrieve all comments for that pull request.
 	comments, _, err := c.Client.PullRequests().ListComments(c.Username, c.Repository, *pr.Number, &github.PullRequestListCommentsOptions{
 		Sort:      "created",
@@ -174,12 +176,14 @@ func findDCOComment(c *operations.Context, pr *github.PullRequest) (*github.Pull
 	}
 
 	// Go through the comments looking for the automated token.
-	for _, comment := range comments {
+	automatedComments := []*github.PullRequestComment{}
+	for i, _ := range comments {
+		comment := comments[i]
 		if comment.Body != nil && strings.Contains(*comment.Body, dcoCommentToken) {
-			return &comment, nil
+			automatedComments = append(automatedComments, &comment)
 		}
 	}
-	return nil, nil
+	return automatedComments, nil
 }
 
 func formatDCOComment(c *operations.Context, pr *github.PullRequest) string {

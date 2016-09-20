@@ -41,6 +41,11 @@ func (p *PullRequestBuilder) Body(body string) *PullRequestBuilder {
 	return p
 }
 
+func (p *PullRequestBuilder) Commits(commits int) *PullRequestBuilder {
+	p.Value.Commits = MakeInt(commits)
+	return p
+}
+
 func (p *PullRequestBuilder) HeadBranch(username, repository, SHA string) *PullRequestBuilder {
 	p.Value.Head = &github.PullRequestBranch{
 		Repo: &github.Repository{
