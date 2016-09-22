@@ -8,6 +8,7 @@ import (
 	"poule/gh"
 	"poule/operations/catalog/settings"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 )
@@ -111,5 +112,36 @@ func Run(c *configuration.Config, op Operation, runner Runner, filters []*settin
 			time.Sleep(c.Delay)
 		}
 	}
+	return nil
+}
+
+func RunSingle(c *configuration.Config, op Operation, item gh.Item) error {
+	context := Context{}
+	context.Client = gh.MakeClient(c)
+	context.Username, context.Repository = c.SplitRepository()
+
+	// Apply operation-specific filtering.
+	filterResult, userdata, err := op.Filter(&context, item)
+	if err != nil {
+		return err
+	}
+
+	// Proceed with operation application depending on the result of
+	// the filtering.
+	switch filterResult {
+	case Accept:
+		if s := op.Describe(&context, item, userdata); s != "" {
+			logrus.Info(s)
+		}
+		if !c.DryRun {
+			if err := op.Apply(&context, item, userdata); err != nil {
+				return err
+			}
+		}
+		break
+	case Terminal:
+		return nil
+	}
+
 	return nil
 }

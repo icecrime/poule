@@ -8,6 +8,18 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/Sirupsen/logrus",
+			"repository": "https://github.com/Sirupsen/logrus",
+			"revision": "3ec0642a7fb6488f65b06f9040adc67e3990296a",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/bitly/go-nsq",
+			"repository": "https://github.com/bitly/go-nsq",
+			"revision": "d71fb89c9e0263aaed89645b0b168e11ccf597b1",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/davecgh/go-spew/spew",
 			"repository": "https://github.com/davecgh/go-spew",
 			"revision": "6cf5744a041a0022271cefed95ba843f6d87fd51",
@@ -32,6 +44,12 @@
 			"importpath": "github.com/mitchellh/mapstructure",
 			"repository": "https://github.com/mitchellh/mapstructure",
 			"revision": "ca63d7c062ee3c9f34db231e352b60012b4fd0c1",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/mreiferson/go-snappystream",
+			"repository": "https://github.com/mreiferson/go-snappystream",
+			"revision": "028eae7ab5c4c9e2d1cb4c4ca1e53259bbe7e504",
 			"branch": "master"
 		},
 		{
@@ -91,6 +109,18 @@
 			"revision": "79ffda073da804f325135da5ff645a630a4d7625",
 			"branch": "master",
 			"path": "/internal"
+		},
+		{
+			"importpath": "gopkg.in/airbrake/gobrake.v2",
+			"repository": "https://gopkg.in/airbrake/gobrake.v2",
+			"revision": "5d77bd50d083834501349f8be70197b26963674d",
+			"branch": "master"
+		},
+		{
+			"importpath": "gopkg.in/gemnasium/logrus-airbrake-hook.v2",
+			"repository": "https://gopkg.in/gemnasium/logrus-airbrake-hook.v2",
+			"revision": "31e6fd4bd5a98d8ee7673d24bc54ec73c31810dd",
+			"branch": "master"
 		},
 		{
 			"importpath": "gopkg.in/urfave/cli.v1",

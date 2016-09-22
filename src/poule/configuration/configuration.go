@@ -10,10 +10,10 @@ import (
 
 type Config struct {
 	Delay      time.Duration `yaml:"delay"`
-	DryRun     bool          `yaml:"dry-run"`
+	DryRun     bool          `yaml:"dry-run" toml:"dry_run"`
 	Repository string        `yaml:"repository"`
 	Token      string        `yaml:"token"`
-	TokenFile  string        `yaml:"token-file"`
+	TokenFile  string        `yaml:"token-file" toml:"token_file"`
 }
 
 func (c *Config) SplitRepository() (string, string) {
@@ -33,6 +33,10 @@ func (c *Config) Validate() error {
 
 func Flags() []cli.Flag {
 	return []cli.Flag{
+		cli.BoolFlag{
+			Name:  "debug, D",
+			Usage: "enable debug logging",
+		},
 		cli.DurationFlag{
 			Name:  "delay",
 			Usage: "delay between GitHub operations",

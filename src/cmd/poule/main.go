@@ -10,6 +10,7 @@ import (
 	"poule/operations/catalog"
 	"poule/operations/catalog/settings"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -18,6 +19,13 @@ func main() {
 	app.Name = "poule"
 	app.Usage = "Mass interact with GitHub issues & pull requests"
 	app.Version = "0.3.0"
+	app.Before = func(c *cli.Context) error {
+		if c.GlobalBool("debug") {
+			logrus.SetLevel(logrus.DebugLevel)
+		}
+
+		return nil
+	}
 
 	app.Commands = []cli.Command{
 		batchCommand,
