@@ -8,6 +8,7 @@ import (
 	"poule/gh"
 	"poule/operations"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
@@ -118,6 +119,7 @@ func (o *dcoCheckOperation) applyUnsigned(c *operations.Context, pr *github.Pull
 
 func (o *dcoCheckOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
 	pr := item.PullRequest
+	logrus.Debugf("dco-check: %d signed: %v", *pr.Number, userData.(bool))
 	if isSigned := userData.(bool); isSigned {
 		return fmt.Sprintf("Pull request #%d is signed: label %q and explanation comment will be removed", *pr.Number, o.UnsignedLabel)
 	} else {
@@ -138,10 +140,15 @@ func (o *dcoCheckOperation) Filter(c *operations.Context, item gh.Item) (operati
 	//    comment which explains how to proceed.
 	//  - Those which aren't get the `dco/no` label added, as well as the
 	//    comment which explains how to proceed.
-	isSigned := true
+	isSigned := false
 	for _, commit := range commits {
-		if commit.Message != nil && !dcoRegex.MatchString(*commit.Message) {
-			isSigned = false
+		if commit.Commit == nil {
+			continue
+		}
+
+		msg := *commit.Commit.Message
+		if dcoRegex.MatchString(msg) {
+			isSigned = true
 			break
 		}
 	}

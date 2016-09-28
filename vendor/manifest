@@ -27,6 +27,12 @@
 			"path": "/spew"
 		},
 		{
+			"importpath": "github.com/ehazlett/simplelog",
+			"repository": "https://github.com/ehazlett/simplelog",
+			"revision": "a328490a561e74e0d04750e401f9813a390777d6",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/google/go-github/github",
 			"repository": "https://github.com/google/go-github",
 			"revision": "7f154f4cabd28c7b5962c37a5f59bb813ae3791a",

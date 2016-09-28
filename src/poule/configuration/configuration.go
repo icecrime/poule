@@ -9,11 +9,11 @@ import (
 )
 
 type Config struct {
-	Delay      time.Duration `yaml:"delay"`
-	DryRun     bool          `yaml:"dry-run" toml:"dry_run"`
-	Repository string        `yaml:"repository"`
-	Token      string        `yaml:"token"`
-	TokenFile  string        `yaml:"token-file" toml:"token_file"`
+	Delay      time.Duration `toml:"delay"`
+	DryRun     bool          `toml:"dry_run"`
+	Repository string        `toml:"repository"`
+	Token      string        `toml:"token"`
+	TokenFile  string        `toml:"token_file"`
 }
 
 func (c *Config) SplitRepository() (string, string) {
@@ -61,7 +61,7 @@ func Flags() []cli.Flag {
 	}
 }
 
-func FromGlobalFlags(c *cli.Context) (*Config, error) {
+func FromGlobalFlags(c *cli.Context) *Config {
 	config := &Config{
 		Delay:      c.GlobalDuration("delay"),
 		DryRun:     c.GlobalBool("dry-run"),
@@ -69,7 +69,7 @@ func FromGlobalFlags(c *cli.Context) (*Config, error) {
 		Token:      c.GlobalString("token"),
 		TokenFile:  c.GlobalString("token-file"),
 	}
-	return config, config.Validate()
+	return config
 }
 
 func getRepository(repository string) (string, string, error) {

@@ -26,17 +26,15 @@ $> poule --repository docker/docker --token-file ~/.gitthub-token --dry-run=true
 Example:
 
 ```bash
-$> cat dco-check.yml
-dry-run:    True
-repository: docker/docker
+$> cat dco-check.toml
+dry_run = true
+repository = "docker/docker"
+token = "<github-token>"
 
-# A list of operations to run as part of the batch job.
-operations:
-
-    - type: dco-check
-      filters: {
-          is: "pr",
-      }
+[[operations]]
+type = "dco-check"
+[operations.filters]
+is = "pr"
 
 $> poule batch dco-check.yml
 ```

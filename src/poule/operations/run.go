@@ -1,7 +1,6 @@
 package operations
 
 import (
-	"log"
 	"time"
 
 	"poule/configuration"
@@ -92,7 +91,7 @@ func Run(c *configuration.Config, op Operation, runner Runner, filters []*settin
 			switch filterResult {
 			case Accept:
 				if s := op.Describe(&context, item, userdata); s != "" {
-					log.Printf(s)
+					logrus.Info(s)
 				}
 				if !c.DryRun {
 					if err := op.Apply(&context, item, userdata); err != nil {
