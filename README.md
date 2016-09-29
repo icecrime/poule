@@ -41,4 +41,29 @@ $> poule batch dco-check.yml
 
 ## 3. Long running job
 
-TBD
+Poule can connect to NSQ to receive events for Github issues and pull requests.
+It will then use this event data to perform the actions listed in a config
+file.
+
+## 4. Poule Server
+Example Config:
+
+```toml
+dry_run = true
+token = "<github-api-token>"
+topic = "pulls"
+channel = "poule"
+
+[triggers.default]
+repositories = [docker/docker"]
+
+[[triggers.default.operations]]
+type = "dco-check"
+[triggers.default.operations.filters]
+is = "pr"
+
+```
+
+```bash
+$> poule serve config.toml
+```

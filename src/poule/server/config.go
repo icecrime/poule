@@ -1,20 +1,23 @@
 package server
 
-import "poule/configuration"
+import "time"
 
 type ServerConfig struct {
-	ListenAddr     string                `toml:"listen"`
-	NSQLookupdAddr string                `toml:"nsq_lookupd_addr"`
-	Topic          string                `toml:"topic"`
-	Channel        string                `toml:"channel"`
-	Config         *configuration.Config `toml:"config"`
-	Events         []EventConfiguration  `toml:"events"`
+	ListenAddr     string        `toml:"listen"`
+	NSQLookupdAddr string        `toml:"nsq_lookupd_addr"`
+	Topic          string        `toml:"topic"`
+	Channel        string        `toml:"channel"`
+	DryRun         bool          `toml:"dry_run"`
+	Delay          time.Duration `toml:"delay"`
+	Token          string        `toml:"token"`
+	TokenFile      string        `toml:"token_file"`
+
+	Triggers map[string]TriggerConfiguration `toml:"triggers"`
 }
 
-type EventConfiguration struct {
-	Type       string                   `toml:"type"`
-	Action     string                   `toml:"action"`
-	Operations []OperationConfiguration `toml:"operations"`
+type TriggerConfiguration struct {
+	Repositories []string                 `toml:"repositories"`
+	Operations   []OperationConfiguration `toml:"operations"`
 }
 
 type OperationConfiguration struct {
