@@ -37,12 +37,12 @@ func Flags() []cli.Flag {
 			Name:  "debug, D",
 			Usage: "enable debug logging",
 		},
-		cli.DurationFlag{
-			Name:  "delay",
-			Usage: "delay between GitHub operations",
-			Value: 10 * time.Second,
-		},
-		cli.BoolTFlag{
+		//cli.DurationFlag{
+		//	Name:  "delay",
+		//	Usage: "delay between GitHub operations",
+		//	Value: 10 * time.Second,
+		//},
+		cli.BoolFlag{
 			Name:  "dry-run",
 			Usage: "simulate operations",
 		},

@@ -110,20 +110,21 @@ func (o *dcoCheckOperation) applyUnsigned(c *operations.Context, pr *github.Pull
 
 	// Create the automated comment.
 	content := formatDCOComment(c, pr)
-	comment := &github.PullRequestComment{
+	comment := &github.IssueComment{
 		Body: &content,
 	}
-	_, _, err := c.Client.PullRequests().CreateComment(c.Username, c.Repository, *pr.Number, comment)
+
+	logrus.Debugf("adding DCO comment: username=%s repo=%s", c.Username, c.Repository)
+	_, _, err := c.Client.Issues().CreateComment(c.Username, c.Repository, *pr.Number, comment)
 	return err
 }
 
 func (o *dcoCheckOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
 	pr := item.PullRequest
-	logrus.Debugf("dco-check: %d signed: %v", *pr.Number, userData.(bool))
 	if isSigned := userData.(bool); isSigned {
-		return fmt.Sprintf("Pull request #%d is signed: label %q and explanation comment will be removed", *pr.Number, o.UnsignedLabel)
+		return fmt.Sprintf("pull request #%d is signed: label %q and explanation comment will be removed", *pr.Number, o.UnsignedLabel)
 	} else {
-		return fmt.Sprintf("Pull request #%d is unsigned: label %q and explanation comment will be added", *pr.Number, o.UnsignedLabel)
+		return fmt.Sprintf("pull request #%d is unsigned: label %q and explanation comment will be added", *pr.Number, o.UnsignedLabel)
 	}
 }
 
@@ -200,14 +201,14 @@ https://github.com/docker/docker/blob/master/CONTRIBUTING.md#sign-your-work
 The easiest way to do this is to amend the last commit:
 ~~~console
 `
-	comment += fmt.Sprintf("$ git clone -b %q %s %s\n", pr.Head.Ref, pr.Head.Repo.SSHURL, "somewhere")
+	comment += fmt.Sprintf("$ git clone -b %q %s %s\n", *pr.Head.Ref, *pr.Head.Repo.SSHURL, "somewhere")
 	comment += "$ cd somewhere\n"
-	if *pr.Commits > 1 {
+	if pr.Commits != nil && *pr.Commits > 1 {
 		comment += fmt.Sprintf("$ git rebase -i HEAD~%d\n", pr.Commits)
 		comment += "editor opens\nchange each 'pick' to 'edit'\nsave the file and quit\n"
 	}
 	comment += "$ git commit --amend -s --no-edit\n"
-	if *pr.Commits > 1 {
+	if pr.Commits != nil && *pr.Commits > 1 {
 		comment += "$ git rebase --continue # and repeat the amend for each commit\n"
 	}
 	comment += "$ git push -f\n"

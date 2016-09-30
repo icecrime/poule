@@ -44,14 +44,14 @@ func executeBatchFile(c *cli.Context, file string) error {
 		return err
 	}
 
-	// Read the YAML configuration file identified by the argument.
+	// Read the configuration file identified by the argument.
 	batchConfig := batchConfiguration{}
 	if _, err := toml.Decode(string(b), &batchConfig); err != nil {
 		return err
 	}
 
 	// Read the global configuration flags, and override them with the
-	// specialized flags defined in the YAML configuration file.
+	// specialized flags defined in the configuration file.
 	config := configuration.FromGlobalFlags(c)
 	batchConfig.applyConfig(config)
 
@@ -71,13 +71,25 @@ func executeBatchFile(c *cli.Context, file string) error {
 		if err != nil {
 			return err
 		}
-		runSingleOperation(config, op, itemFilters)
+		if err := runSingleOperation(config, op, itemFilters); err != nil {
+			logrus.Error(err)
+		}
 	}
 	return nil
 }
 
+type duration struct {
+	time.Duration
+}
+
+func (d *duration) UnmarshalText(text []byte) error {
+	var err error
+	d.Duration, err = time.ParseDuration(string(text))
+	return err
+}
+
 type batchConfiguration struct {
-	Delay      time.Duration            `toml:"delay"`
+	Delay      duration                 `toml:"delay"`
 	DryRun     bool                     `toml:"dry_run"`
 	Repository string                   `toml:"repository"`
 	Token      string                   `toml:"token"`
@@ -92,10 +104,7 @@ type operationConfiguration struct {
 }
 
 func (b *batchConfiguration) applyConfig(c *configuration.Config) {
-	if c.Delay == time.Second*0 {
-		c.Delay = b.Delay
-	}
-	if !c.DryRun {
+	if !c.DryRun && b.DryRun {
 		c.DryRun = b.DryRun
 	}
 	if c.Repository == "" {
