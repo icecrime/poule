@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 
-	"poule/configuration"
 	"poule/operations/catalog"
 	"poule/operations/catalog/settings"
 
@@ -30,12 +29,31 @@ func main() {
 		batchCommand,
 		serveCommand,
 	}
-	for i, _ := range catalog.Index {
-		descriptor := catalog.Index[i]
-		app.Commands = append(app.Commands, makeCommand(descriptor))
-	}
 
-	app.Flags = configuration.Flags()
+	app.Flags = []cli.Flag{
+		cli.BoolFlag{
+			Name:  "debug, D",
+			Usage: "enable debug logging",
+		},
+		cli.BoolFlag{
+			Name:  "dry-run",
+			Usage: "simulate operations",
+		},
+		cli.StringFlag{
+			Name:  "repository",
+			Usage: "GitHub repository",
+		},
+		cli.StringFlag{
+			Name:   "token",
+			Usage:  "GitHub API token",
+			EnvVar: "POULE_GITHUB_TOKEN",
+		},
+		cli.StringFlag{
+			Name:   "token-file",
+			Usage:  "GitHub API token file",
+			EnvVar: "POULE_GITHUB_TOKEN_FILE",
+		},
+	}
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}

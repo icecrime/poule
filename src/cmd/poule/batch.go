@@ -55,7 +55,6 @@ func executeBatchFile(c *cli.Context, file string) error {
 	config := configuration.FromGlobalFlags(c)
 	batchConfig.applyConfig(config)
 
-	logrus.Debugf("using config: %+v", config)
 	// Execute each command described as part of the YAML file.
 	for _, operationConfig := range batchConfig.Operations {
 		logrus.Debugf("processing operation: %s", operationConfig.Type)
@@ -78,6 +77,8 @@ func executeBatchFile(c *cli.Context, file string) error {
 	return nil
 }
 
+// we need a special type to allow toml to decode from a duration string
+// see https://github.com/BurntSushi/toml#using-the-encodingtextunmarshaler-interface
 type duration struct {
 	time.Duration
 }
@@ -89,11 +90,7 @@ func (d *duration) UnmarshalText(text []byte) error {
 }
 
 type batchConfiguration struct {
-	Delay      duration                 `toml:"delay"`
-	DryRun     bool                     `toml:"dry_run"`
-	Repository string                   `toml:"repository"`
-	Token      string                   `toml:"token"`
-	TokenFile  string                   `toml:"token_file"`
+	configuration.Config
 	Operations []operationConfiguration `toml:"operations"`
 }
 
@@ -104,6 +101,10 @@ type operationConfiguration struct {
 }
 
 func (b *batchConfiguration) applyConfig(c *configuration.Config) {
+	batchDelay := b.Delay()
+	if batchDelay != time.Second*0 {
+		c.SetDelay(batchDelay)
+	}
 	if !c.DryRun && b.DryRun {
 		c.DryRun = b.DryRun
 	}

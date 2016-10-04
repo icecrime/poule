@@ -107,8 +107,8 @@ func Run(c *configuration.Config, op Operation, runner Runner, filters []*settin
 		// Move on to the next page, and respect the specified delay to avoid
 		// hammering the GitHub API.
 		page = resp.NextPage
-		if c.Delay > 0 {
-			time.Sleep(c.Delay)
+		if c.Delay() > 0 {
+			time.Sleep(c.Delay())
 		}
 	}
 	return nil

@@ -87,7 +87,7 @@ func (o *dcoCheckOperation) applySigned(c *operations.Context, pr *github.PullRe
 		return err
 	}
 	for _, comment := range automatedComments {
-		if _, err := c.Client.PullRequests().DeleteComment(c.Username, c.Repository, *comment.ID); err != nil {
+		if _, err := c.Client.Issues().DeleteComment(c.Username, c.Repository, *comment.ID); err != nil {
 			return err
 		}
 	}
@@ -170,9 +170,9 @@ func (o *dcoCheckOperation) PullRequestListOptions(c *operations.Context) *githu
 	}
 }
 
-func findDCOComments(c *operations.Context, pr *github.PullRequest) ([]*github.PullRequestComment, error) {
+func findDCOComments(c *operations.Context, pr *github.PullRequest) ([]*github.IssueComment, error) {
 	// Retrieve all comments for that pull request.
-	comments, _, err := c.Client.PullRequests().ListComments(c.Username, c.Repository, *pr.Number, &github.PullRequestListCommentsOptions{
+	comments, _, err := c.Client.Issues().ListComments(c.Username, c.Repository, *pr.Number, &github.IssueListCommentsOptions{
 		Sort:      "created",
 		Direction: "desc",
 		ListOptions: github.ListOptions{
@@ -184,7 +184,7 @@ func findDCOComments(c *operations.Context, pr *github.PullRequest) ([]*github.P
 	}
 
 	// Go through the comments looking for the automated token.
-	automatedComments := []*github.PullRequestComment{}
+	automatedComments := []*github.IssueComment{}
 	for i, _ := range comments {
 		comment := comments[i]
 		if comment.Body != nil && strings.Contains(*comment.Body, dcoCommentToken) {

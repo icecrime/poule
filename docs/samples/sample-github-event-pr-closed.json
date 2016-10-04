@@ -1,5 +1,5 @@
 {
-  "action": "open",
+  "action": "closed",
   "number": 5,
   "pull_request": {
     "url": "https://api.github.com/repos/ehazlett/poule-sandbox/pulls/5",
@@ -9,7 +9,7 @@
     "patch_url": "https://github.com/ehazlett/poule-sandbox/pull/5.patch",
     "issue_url": "https://api.github.com/repos/ehazlett/poule-sandbox/issues/5",
     "number": 5,
-    "state": "open",
+    "state": "closed",
     "locked": false,
     "title": "add sputnik",
     "user": {

@@ -39,7 +39,7 @@ func (s *Server) dispatchEvent(data []byte, trigger TriggerConfiguration) error 
 	}
 
 	// TODO: handle issue
-	logrus.Warn("unknown event received: %+v", payload)
+	logrus.Debugf("unknown event received: %+v", payload)
 	return nil
 }
 
@@ -47,6 +47,11 @@ func (s *Server) handlePullRequest(data []byte, trigger TriggerConfiguration) er
 	var evt *github.PullRequestEvent
 	if err := json.Unmarshal(data, &evt); err != nil {
 		return err
+	}
+
+	if *evt.PullRequest.State == "closed" {
+		logrus.Debug("skipping closed PR")
+		return nil
 	}
 
 	logrus.Debugf("event received: repo=%s", *evt.Repo.FullName)
@@ -67,7 +72,7 @@ func (s *Server) handlePullRequest(data []byte, trigger TriggerConfiguration) er
 
 				item := gh.MakePullRequestItem(evt.PullRequest)
 				if err := operations.RunSingle(&configuration.Config{
-					Delay:      s.config.Delay,
+					RunDelay:   s.config.RunDelay,
 					DryRun:     s.config.DryRun,
 					Token:      s.config.Token,
 					TokenFile:  s.config.TokenFile,

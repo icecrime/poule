@@ -8,12 +8,30 @@ import (
 	"github.com/urfave/cli"
 )
 
+// we need a special type to allow toml to decode from a duration string
+// see https://github.com/BurntSushi/toml#using-the-encodingtextunmarshaler-interface
+type duration struct {
+	time.Duration
+}
+
+func (d *duration) UnmarshalText(text []byte) error {
+	var err error
+	d.Duration, err = time.ParseDuration(string(text))
+	return err
+}
+
 type Config struct {
-	Delay      time.Duration `toml:"delay"`
-	DryRun     bool          `toml:"dry_run"`
-	Repository string        `toml:"repository"`
-	Token      string        `toml:"token"`
-	TokenFile  string        `toml:"token_file"`
+	RunDelay   duration `toml:"delay"`
+	DryRun     bool     `toml:"dry_run"`
+	Repository string   `toml:"repository"`
+	Token      string   `toml:"token"`
+	TokenFile  string   `toml:"token_file"`
+}
+
+type OperationConfiguration struct {
+	Type     string                 `toml:"type"`
+	Filters  map[string]interface{} `toml:"filters"`
+	Settings map[string]interface{} `toml:"settings"`
 }
 
 func (c *Config) SplitRepository() (string, string) {
@@ -31,39 +49,20 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func Flags() []cli.Flag {
-	return []cli.Flag{
-		cli.BoolFlag{
-			Name:  "debug, D",
-			Usage: "enable debug logging",
-		},
-		//cli.DurationFlag{
-		//	Name:  "delay",
-		//	Usage: "delay between GitHub operations",
-		//	Value: 10 * time.Second,
-		//},
-		cli.BoolFlag{
-			Name:  "dry-run",
-			Usage: "simulate operations",
-		},
-		cli.StringFlag{
-			Name:  "repository",
-			Usage: "GitHub repository",
-		},
-		cli.StringFlag{
-			Name:  "token",
-			Usage: "GitHub API token",
-		},
-		cli.StringFlag{
-			Name:  "token-file",
-			Usage: "GitHub API token file",
-		},
-	}
+// SetDelay is a helper function to update the duration in the config
+func (c *Config) SetDelay(t time.Duration) {
+	d := duration{}
+	d.Duration = t
+	c.RunDelay = d
+}
+
+// Delay is a helper function to get the delay in a time.Duration format
+func (c *Config) Delay() time.Duration {
+	return time.Duration(c.RunDelay.Seconds()) * time.Second
 }
 
 func FromGlobalFlags(c *cli.Context) *Config {
 	config := &Config{
-		Delay:      c.GlobalDuration("delay"),
 		DryRun:     c.GlobalBool("dry-run"),
 		Repository: c.GlobalString("repository"),
 		Token:      c.GlobalString("token"),

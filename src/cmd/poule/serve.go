@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 
+	"poule/configuration"
 	"poule/server"
 
 	"github.com/BurntSushi/toml"
@@ -18,16 +19,6 @@ var serveCommand = cli.Command{
 			Name:  "config, c",
 			Value: "poule.toml",
 			Usage: "Poule configuration",
-		},
-		cli.StringFlag{
-			Name:  "listen, l",
-			Value: ":8080",
-			Usage: "Address on which to listen",
-		},
-		cli.StringFlag{
-			Name:  "nsq-lookupd, n",
-			Value: "127.0.0.1:4161",
-			Usage: "Address of NSQ lookupd",
 		},
 	},
 	Action: doServeCommand,
@@ -51,8 +42,8 @@ func doServeCommand(c *cli.Context) {
 		log.Fatalf("Failed to read config file %q: %v", cfgPath, err)
 	}
 
-	serveConfig.ListenAddr = c.String("listen")
-	serveConfig.NSQLookupdAddr = c.String("nsq-lookupd")
+	overrides := configuration.FromGlobalFlags(c)
+	overrideConfig(&serveConfig.Config, overrides)
 
 	s, err := server.NewServer(&serveConfig)
 	if err != nil {
@@ -61,5 +52,17 @@ func doServeCommand(c *cli.Context) {
 
 	if err := s.Run(); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func overrideConfig(config, overrides *configuration.Config) {
+	if !config.DryRun && overrides.DryRun {
+		config.DryRun = overrides.DryRun
+	}
+	if overrides.Token != "" {
+		config.Token = overrides.Token
+	}
+	if overrides.TokenFile != "" {
+		config.TokenFile = overrides.TokenFile
 	}
 }
