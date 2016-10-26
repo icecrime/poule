@@ -11,7 +11,13 @@ type ServerConfig struct {
 	Triggers       map[string]TriggerConfiguration `toml:"triggers"`
 }
 
+type Event struct {
+	Type   string `toml:"type"`
+	Action string `toml:"action"`
+}
+
 type TriggerConfiguration struct {
 	Repositories []string                               `toml:"repositories"`
+	Events       []Event                                `toml:"events"`
 	Operations   []configuration.OperationConfiguration `toml:"operations"`
 }

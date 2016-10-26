@@ -50,12 +50,22 @@ Example Config:
 
 ```toml
 dry_run = true
+listen_addr = ":8080"
+nsq_lookupd_addr = "127.0.0.1:4150"
 token = "<github-api-token>"
 topic = "pulls"
 channel = "poule"
 
 [triggers.default]
-repositories = [docker/docker"]
+repositories = ["docker/docker"]
+
+[[triggers.default.events]]
+type = "pull_request"
+action = "opened"
+
+[[triggers.default.events]]
+type = "pull_request"
+action = "reopened"
 
 [[triggers.default.operations]]
 type = "dco-check"

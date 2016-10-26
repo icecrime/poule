@@ -13,6 +13,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+type PartialMessage struct {
+	GitHubEvent    string `json:"X-GitHub-Event"`
+	GitHubDelivery string `json:"X-GitHub-Delivery"`
+	HubSignature   string `json:"X-Hub-Signature"`
+	Action         string `json:"action"`
+}
+
 func (s *Server) handler(message *nsq.Message) error {
 	logrus.Debugf("nsq message: id=%s timestamp=%d", message.ID, message.Timestamp)
 	for name, trigger := range s.config.Triggers {
@@ -28,18 +35,24 @@ func (s *Server) handler(message *nsq.Message) error {
 }
 
 func (s *Server) dispatchEvent(data []byte, trigger TriggerConfiguration) error {
-	var payload map[string]interface{}
-	if err := json.Unmarshal(data, &payload); err != nil {
+	var m PartialMessage
+	if err := json.Unmarshal(data, &m); err != nil {
 		return err
 	}
 
-	// handle pull request
-	if _, ok := payload["pull_request"]; ok {
-		return s.handlePullRequest(data, trigger)
+	for _, e := range trigger.Events {
+		if m.GitHubEvent == e.Type && m.Action == e.Action {
+			switch m.GitHubEvent {
+			case "pull_request":
+				if err := s.handlePullRequest(data, trigger); err != nil {
+					return err
+				}
+			default:
+				logrus.Warnf("unhandled event type: %s", m.GitHubEvent)
+			}
+		}
 	}
 
-	// TODO: handle issue
-	logrus.Debugf("unknown event received: %+v", payload)
 	return nil
 }
 
@@ -47,11 +60,6 @@ func (s *Server) handlePullRequest(data []byte, trigger TriggerConfiguration) er
 	var evt *github.PullRequestEvent
 	if err := json.Unmarshal(data, &evt); err != nil {
 		return err
-	}
-
-	if *evt.PullRequest.State == "closed" {
-		logrus.Debug("skipping closed PR")
-		return nil
 	}
 
 	logrus.Debugf("event received: repo=%s", *evt.Repo.FullName)
