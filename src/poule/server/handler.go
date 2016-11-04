@@ -27,7 +27,11 @@ func (s *Server) HandleMessage(message *nsq.Message) error {
 	if err := json.Unmarshal(message.Body, &m); err != nil {
 		return err
 	}
-	logrus.Debugf("GitHub data: event=%s action=%s", m.GitHubEvent, m.Action)
+
+	logrus.WithFields(logrus.Fields{
+		"action": m.Action,
+		"event":  m.GitHubEvent,
+	}).Debugf("received GitHub event")
 
 	// Go through the configurations that match this (event, action) couple. In the `Triggers` map,
 	// keys are GitHub event types, and values are associated actions.
