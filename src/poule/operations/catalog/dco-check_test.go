@@ -49,28 +49,32 @@ func TestDCOFailure(t *testing.T) {
 	// Set up the mock objects.
 	clt.MockIssues.
 		On("AddLabelsToIssue", ctx.Username, ctx.Repository, test.IssueNumber, []string{testDCOFailureLabel}).
-		Return([]github.Label{}, nil, nil)
+		Return([]*github.Label{}, nil, nil)
 
 	clt.MockPullRequests.
 		On("ListCommits", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.ListOptions")).
-		Return([]github.RepositoryCommit{
-			github.RepositoryCommit{
-				SHA:     test.MakeString(test.CommitSHA[0]),
-				Message: test.MakeString("Commit message"),
+		Return([]*github.RepositoryCommit{
+			&github.RepositoryCommit{
+				Commit: &github.Commit{
+					SHA:     test.MakeString(test.CommitSHA[0]),
+					Message: test.MakeString("Commit message"),
+				},
 			},
-			github.RepositoryCommit{
-				SHA:     test.MakeString(test.CommitSHA[1]),
-				Message: test.MakeString("Signed-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
+			&github.RepositoryCommit{
+				Commit: &github.Commit{
+					SHA:     test.MakeString(test.CommitSHA[1]),
+					Message: test.MakeString("Signed-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
+				},
 			},
 		}, nil, nil)
 
-	clt.MockPullRequests.
-		On("ListComments", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.PullRequestListCommentsOptions")).
-		Return([]github.PullRequestComment{}, nil, nil)
+	clt.MockIssues.
+		On("ListComments", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.IssueListCommentsOptions")).
+		Return([]*github.IssueComment{}, nil, nil)
 
-	clt.MockPullRequests.
-		On("CreateComment", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.PullRequestComment")).
-		Return(&github.PullRequestComment{}, nil, nil)
+	clt.MockIssues.
+		On("CreateComment", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.IssueComment")).
+		Return(&github.IssueComment{}, nil, nil)
 
 	dcoTestStub(t, ctx, item)
 
@@ -103,35 +107,35 @@ func TestDCOSuccess(t *testing.T) {
 
 	clt.MockPullRequests.
 		On("ListCommits", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.ListOptions")).
-		Return([]github.RepositoryCommit{
-			github.RepositoryCommit{
+		Return([]*github.RepositoryCommit{
+			&github.RepositoryCommit{
 				SHA:     test.MakeString(test.CommitSHA[0]),
 				Message: test.MakeString("This is signed.\nSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
 			},
-			github.RepositoryCommit{
+			&github.RepositoryCommit{
 				SHA:     test.MakeString(test.CommitSHA[1]),
 				Message: test.MakeString("This too.\n\tSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>  \nYep.\n"),
 			},
 		}, nil, nil)
 
-	clt.MockPullRequests.
-		On("ListComments", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.PullRequestListCommentsOptions")).
-		Return([]github.PullRequestComment{
-			github.PullRequestComment{
+	clt.MockIssues.
+		On("ListComments", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.IssueListCommentsOptions")).
+		Return([]*github.IssueComment{
+			&github.IssueComment{
 				ID:   test.MakeInt(test.CommentID),
 				Body: test.MakeString(fmt.Sprintf("%s\nPlease sign your commit!", dcoCommentToken)),
 			},
-			github.PullRequestComment{
+			&github.IssueComment{
 				ID:   test.MakeInt(test.CommentID + 1),
 				Body: test.MakeString("Merge it!"),
 			},
-			github.PullRequestComment{
+			&github.IssueComment{
 				ID:   test.MakeInt(test.CommentID + 2),
 				Body: test.MakeString("Unrelated comment."),
 			},
 		}, nil, nil)
 
-	clt.MockPullRequests.
+	clt.MockIssues.
 		On("DeleteComment", ctx.Username, ctx.Repository, test.CommentID).
 		Return(nil, nil)
 

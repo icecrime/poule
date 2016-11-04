@@ -28,7 +28,7 @@ func (s *StatusSnapshot) HasFailures() bool {
 
 // GetLatestStatuses returns the selection of the latest status for each
 // configuration.
-func GetLatestStatuses(statuses []github.RepoStatus) StatusSnapshot {
+func GetLatestStatuses(statuses []*github.RepoStatus) StatusSnapshot {
 	latestStatuses := StatusSnapshot{}
 	for _, repoStatus := range statuses {
 		if repoStatus.CreatedAt.Unix() > latestStatuses[*repoStatus.Context].CreatedAt.Unix() {

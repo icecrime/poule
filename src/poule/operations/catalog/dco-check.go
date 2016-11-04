@@ -8,7 +8,6 @@ import (
 	"poule/gh"
 	"poule/operations"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
@@ -113,18 +112,15 @@ func (o *dcoCheckOperation) applyUnsigned(c *operations.Context, pr *github.Pull
 	comment := &github.IssueComment{
 		Body: &content,
 	}
-
-	logrus.Debugf("adding DCO comment: username=%s repo=%s", c.Username, c.Repository)
 	_, _, err := c.Client.Issues().CreateComment(c.Username, c.Repository, *pr.Number, comment)
 	return err
 }
 
 func (o *dcoCheckOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
-	pr := item.PullRequest
 	if isSigned := userData.(bool); isSigned {
-		return fmt.Sprintf("pull request #%d is signed: label %q and explanation comment will be removed", *pr.Number, o.UnsignedLabel)
+		return fmt.Sprintf("pull request is signed: removing label %q and explanation comment", o.UnsignedLabel)
 	} else {
-		return fmt.Sprintf("pull request #%d is unsigned: label %q and explanation comment will be added", *pr.Number, o.UnsignedLabel)
+		return fmt.Sprintf("pull request is unsigned: adding label %q and explanation comment", o.UnsignedLabel)
 	}
 }
 
@@ -141,15 +137,10 @@ func (o *dcoCheckOperation) Filter(c *operations.Context, item gh.Item) (operati
 	//    comment which explains how to proceed.
 	//  - Those which aren't get the `dco/no` label added, as well as the
 	//    comment which explains how to proceed.
-	isSigned := false
+	isSigned := true
 	for _, commit := range commits {
-		if commit.Commit == nil {
-			continue
-		}
-
-		msg := *commit.Commit.Message
-		if dcoRegex.MatchString(msg) {
-			isSigned = true
+		if commit.Commit != nil && !dcoRegex.MatchString(*commit.Commit.Message) {
+			isSigned = false
 			break
 		}
 	}
@@ -188,7 +179,7 @@ func findDCOComments(c *operations.Context, pr *github.PullRequest) ([]*github.I
 	for i, _ := range comments {
 		comment := comments[i]
 		if comment.Body != nil && strings.Contains(*comment.Body, dcoCommentToken) {
-			automatedComments = append(automatedComments, &comment)
+			automatedComments = append(automatedComments, comment)
 		}
 	}
 	return automatedComments, nil

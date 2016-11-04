@@ -8,30 +8,18 @@ import (
 	"github.com/urfave/cli"
 )
 
-// we need a special type to allow toml to decode from a duration string
-// see https://github.com/BurntSushi/toml#using-the-encodingtextunmarshaler-interface
-type duration struct {
-	time.Duration
-}
-
-func (d *duration) UnmarshalText(text []byte) error {
-	var err error
-	d.Duration, err = time.ParseDuration(string(text))
-	return err
-}
-
 type Config struct {
-	RunDelay   duration `toml:"delay"`
-	DryRun     bool     `toml:"dry_run"`
-	Repository string   `toml:"repository"`
-	Token      string   `toml:"token"`
-	TokenFile  string   `toml:"token_file"`
+	RunDelay   time.Duration `yaml:"delay"`
+	DryRun     bool          `yaml:"dry_run"`
+	Repository string        `yaml:"repository"`
+	Token      string        `yaml:"token"`
+	TokenFile  string        `yaml:"token_file"`
 }
 
 type OperationConfiguration struct {
-	Type     string                 `toml:"type"`
-	Filters  map[string]interface{} `toml:"filters"`
-	Settings map[string]interface{} `toml:"settings"`
+	Type     string                 `yaml:"type"`
+	Filters  map[string]interface{} `yaml:"filters"`
+	Settings map[string]interface{} `yaml:"settings"`
 }
 
 func (c *Config) SplitRepository() (string, string) {
@@ -47,13 +35,6 @@ func (c *Config) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// SetDelay is a helper function to update the duration in the config
-func (c *Config) SetDelay(t time.Duration) {
-	d := duration{}
-	d.Duration = t
-	c.RunDelay = d
 }
 
 // Delay is a helper function to get the delay in a time.Duration format

@@ -11,11 +11,11 @@ import (
 	"poule/operations/catalog"
 	"poule/operations/catalog/settings"
 
-	"github.com/BurntSushi/toml"
 	"github.com/Sirupsen/logrus"
 	"github.com/ehazlett/simplelog"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var batchCommand = cli.Command{
@@ -46,7 +46,7 @@ func executeBatchFile(c *cli.Context, file string) error {
 
 	// Read the configuration file identified by the argument.
 	batchConfig := batchConfiguration{}
-	if _, err := toml.Decode(string(b), &batchConfig); err != nil {
+	if err := yaml.Unmarshal(b, &batchConfig); err != nil {
 		return err
 	}
 
@@ -77,8 +77,8 @@ func executeBatchFile(c *cli.Context, file string) error {
 	return nil
 }
 
-// we need a special type to allow toml to decode from a duration string
-// see https://github.com/BurntSushi/toml#using-the-encodingtextunmarshaler-interface
+// we need a special type to allow yaml to decode from a duration string
+// see https://github.com/BurntSushi/yaml#using-the-encodingtextunmarshaler-interface
 type duration struct {
 	time.Duration
 }
@@ -91,19 +91,18 @@ func (d *duration) UnmarshalText(text []byte) error {
 
 type batchConfiguration struct {
 	configuration.Config
-	Operations []operationConfiguration `toml:"operations"`
+	Operations []operationConfiguration `yaml:"operations"`
 }
 
 type operationConfiguration struct {
-	Type     string                   `toml:"type"`
-	Filters  map[string]interface{}   `toml:"filters"`
-	Settings operations.Configuration `toml:"settings"`
+	Type     string                   `yaml:"type"`
+	Filters  map[string]interface{}   `yaml:"filters"`
+	Settings operations.Configuration `yaml:"settings"`
 }
 
 func (b *batchConfiguration) applyConfig(c *configuration.Config) {
-	batchDelay := b.Delay()
-	if batchDelay != time.Second*0 {
-		c.SetDelay(batchDelay)
+	if c.RunDelay == 0 {
+		c.RunDelay = b.RunDelay
 	}
 	if !c.DryRun && b.DryRun {
 		c.DryRun = b.DryRun

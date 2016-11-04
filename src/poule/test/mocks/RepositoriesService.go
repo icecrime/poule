@@ -10,15 +10,15 @@ type RepositoriesService struct {
 }
 
 // ListStatuses provides a mock function with given fields: owner, repo, ref, opt
-func (_m *RepositoriesService) ListStatuses(owner string, repo string, ref string, opt *github.ListOptions) ([]github.RepoStatus, *github.Response, error) {
+func (_m *RepositoriesService) ListStatuses(owner string, repo string, ref string, opt *github.ListOptions) ([]*github.RepoStatus, *github.Response, error) {
 	ret := _m.Called(owner, repo, ref, opt)
 
-	var r0 []github.RepoStatus
-	if rf, ok := ret.Get(0).(func(string, string, string, *github.ListOptions) []github.RepoStatus); ok {
+	var r0 []*github.RepoStatus
+	if rf, ok := ret.Get(0).(func(string, string, string, *github.ListOptions) []*github.RepoStatus); ok {
 		r0 = rf(owner, repo, ref, opt)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]github.RepoStatus)
+			r0 = ret.Get(0).([]*github.RepoStatus)
 		}
 	}
 

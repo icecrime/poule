@@ -53,11 +53,11 @@ func (o *ciLabelAuditOperation) Describe(c *operations.Context, item gh.Item, us
 	ud := userData.(ciLabelAuditOperationUserData)
 	// Failing CI label but no CI failures: this is inconsistent.
 	if ud.hasFailingCILabel && !ud.hasFailures {
-		return fmt.Sprintf("Pull request #%d is labeled %q but has no failures", item.Number(), configuration.FailingCILabel)
+		return fmt.Sprintf("Removing label %q", configuration.FailingCILabel)
 	}
 	// No failing CI label with CI failures: this is inconsistent.
 	if !ud.hasFailingCILabel && ud.hasFailures {
-		return fmt.Sprintf("Pull request #%d is not labeled %q but has failures", item.Number(), configuration.FailingCILabel)
+		return fmt.Sprintf("Adding label %q", configuration.FailingCILabel)
 	}
 	// The pull request has a consistent combination of labels and failures.
 	return ""

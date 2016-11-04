@@ -53,7 +53,7 @@ func TestRebuild(t *testing.T) {
 	// did previously fail), and the one that failed but was not included in
 	// the configurations to rebuild.
 	currentTime := time.Now()
-	repoStatuses := []github.RepoStatus{
+	repoStatuses := []*github.RepoStatus{
 		test.MakeStatus("conf_error", "error", currentTime.Add(-24*time.Hour)),
 		test.MakeStatus("conf_fail", "success", currentTime.Add(-1*time.Hour)),
 		test.MakeStatus("conf_fail", "failure", currentTime),

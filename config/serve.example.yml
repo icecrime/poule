@@ -1,10 +1,47 @@
 delay:      30s
-dry-run:    True
-repository: docker/docker
+dry_run:    True
 
-events:
+nsq_channel: "poule-dev"
+nsq_lookupd: "127.0.0.1:4161"
+nsq_topics:  [ "hooks-docker" ]
 
-    - type:   issue
-      action: opened
+configuration:
+
+    #
+    # Common triggers for all repositories.
+    #
+    - repositories: [
+        "docker/docker",
+        "docker/libnetwork",
+        "docker/swarmkit",
+      ]
+      triggers:
+        pull_request:   [ opened, reopened, synchronized ]
       operations:
-          - type: version_label
+        - type:         dco-check
+
+    #
+    # Docker Engine (docker/docker) specific triggers.
+    #
+    - repositories: [
+        "docker/docker",
+      ]
+      triggers:
+        issues:         [ edted, opened, reopened ]
+      operations:
+          - type:       label
+            settings: {
+                patterns: {
+                    area/builder:        [ "dockerfile", "docker build" ],
+                    area/distribution:   [ "docker login", "docker logout", "docker pull", "docker push", "docker search" ],
+                    area/plugin:         [ "docker plugin" ],
+                    area/network:        [ "docker network", "ipvs", "vxlan" ],
+                    area/runtime:        [ "oci runtime error" ],
+                    area/security/trust: [ "docker_content_trust" ],
+                    area/swarm:          [ "docker node", "docker service", "docker swarm" ],
+                    platform/desktop:    [ "docker for mac", "docker for windows" ],
+                    platform/freebsd:    [ "freebsd" ],
+                    platform/windows:    [ "nanoserver", "windowsservercore", "windows server" ],
+                }
+            }
+          - type:       version-label

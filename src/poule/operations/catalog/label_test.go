@@ -28,7 +28,7 @@ func TestLabel(t *testing.T) {
 	expected := []string{"label1", "label2", "label3"}
 	clt.MockIssues.
 		On("AddLabelsToIssue", ctx.Username, ctx.Repository, test.IssueNumber, expected).
-		Return([]github.Label{}, nil, nil)
+		Return([]*github.Label{}, nil, nil)
 
 	// Create the label operation with the test mapping.
 	config := map[string]interface{}{"patterns": patterns}

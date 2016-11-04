@@ -50,7 +50,7 @@ func (o *ciLabelCleanOperation) Apply(c *operations.Context, item gh.Item, userD
 
 func (o *ciLabelCleanOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
 	if hasFailures := userData.(bool); hasFailures {
-		return fmt.Sprintf("Removing label %q from pull request #%d", configuration.FailingCILabel, item.Number())
+		return fmt.Sprintf("Removing label %q", configuration.FailingCILabel)
 	}
 	return ""
 }

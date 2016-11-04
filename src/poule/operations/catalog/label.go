@@ -83,7 +83,7 @@ func (o *labelOperation) Apply(c *operations.Context, item gh.Item, userData int
 }
 
 func (o *labelOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
-	return fmt.Sprintf("Adding labels %s to item #%d", strings.Join(userData.([]string), ", "), item.Number())
+	return fmt.Sprintf("adding labels %s", strings.Join(userData.([]string), ", "))
 }
 
 func (o *labelOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {

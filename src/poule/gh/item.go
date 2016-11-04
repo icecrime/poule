@@ -27,6 +27,11 @@ func MakePullRequestItem(pullRequest *github.PullRequest) Item {
 	}
 }
 
+// IsNil returns true when the item is not initialized.
+func (i Item) IsNil() bool {
+	return i.Issue == nil && i.PullRequest == nil
+}
+
 // IsIssue returns whether the item is strictly a GitHub issue (i.e., not the
 // issue object of a corresponding pull request).
 func (i Item) IsIssue() bool {
@@ -65,6 +70,19 @@ func (i *Item) Number() int {
 	}
 }
 
+// Repository returns the repository full name of the item. In the case of a
+// pull request, this is the destination repository.
+func (i *Item) Repository() string {
+	switch {
+	case i.Issue != nil:
+		return *i.Issue.Repository.FullName
+	case i.PullRequest != nil:
+		return *i.PullRequest.Base.Repo.FullName
+	default:
+		panic("uninitialized item")
+	}
+}
+
 // Title returns the title of the item.
 func (i *Item) Title() string {
 	switch {
@@ -74,6 +92,18 @@ func (i *Item) Title() string {
 		return *i.PullRequest.Title
 	default:
 		panic("uninitialized item")
+	}
+}
+
+// Type returns a string representation of the GitHub item type.
+func (i *Item) Type() string {
+	switch {
+	case i.Issue != nil:
+		return "issue"
+	case i.PullRequest != nil:
+		return "pull_request"
+	default:
+		return "<none>"
 	}
 }
 

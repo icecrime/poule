@@ -46,8 +46,7 @@ func (o *versionLabelOperation) Apply(c *operations.Context, item gh.Item, userD
 }
 
 func (o *versionLabelOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
-	issue := item.Issue
-	return fmt.Sprintf("Adding label %q to issue #%d", userData.(string), *issue.Number)
+	return fmt.Sprintf("adding label %q", userData.(string))
 }
 
 func (o *versionLabelOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {

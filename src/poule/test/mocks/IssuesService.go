@@ -10,15 +10,15 @@ type IssuesService struct {
 }
 
 // AddLabelsToIssue provides a mock function with given fields: owner, repo, number, labels
-func (_m *IssuesService) AddLabelsToIssue(owner string, repo string, number int, labels []string) ([]github.Label, *github.Response, error) {
+func (_m *IssuesService) AddLabelsToIssue(owner string, repo string, number int, labels []string) ([]*github.Label, *github.Response, error) {
 	ret := _m.Called(owner, repo, number, labels)
 
-	var r0 []github.Label
-	if rf, ok := ret.Get(0).(func(string, string, int, []string) []github.Label); ok {
+	var r0 []*github.Label
+	if rf, ok := ret.Get(0).(func(string, string, int, []string) []*github.Label); ok {
 		r0 = rf(owner, repo, number, labels)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]github.Label)
+			r0 = ret.Get(0).([]*github.Label)
 		}
 	}
 
@@ -161,15 +161,15 @@ func (_m *IssuesService) Get(owner string, repo string, number int) (*github.Iss
 }
 
 // ListByRepo provides a mock function with given fields: owner, repo, opt
-func (_m *IssuesService) ListByRepo(owner string, repo string, opt *github.IssueListByRepoOptions) ([]github.Issue, *github.Response, error) {
+func (_m *IssuesService) ListByRepo(owner string, repo string, opt *github.IssueListByRepoOptions) ([]*github.Issue, *github.Response, error) {
 	ret := _m.Called(owner, repo, opt)
 
-	var r0 []github.Issue
-	if rf, ok := ret.Get(0).(func(string, string, *github.IssueListByRepoOptions) []github.Issue); ok {
+	var r0 []*github.Issue
+	if rf, ok := ret.Get(0).(func(string, string, *github.IssueListByRepoOptions) []*github.Issue); ok {
 		r0 = rf(owner, repo, opt)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]github.Issue)
+			r0 = ret.Get(0).([]*github.Issue)
 		}
 	}
 
@@ -193,15 +193,15 @@ func (_m *IssuesService) ListByRepo(owner string, repo string, opt *github.Issue
 }
 
 // ListComments provides a mock function with given fields: owner, repo, number, opt
-func (_m *IssuesService) ListComments(owner string, repo string, number int, opt *github.IssueListCommentsOptions) ([]github.IssueComment, *github.Response, error) {
+func (_m *IssuesService) ListComments(owner string, repo string, number int, opt *github.IssueListCommentsOptions) ([]*github.IssueComment, *github.Response, error) {
 	ret := _m.Called(owner, repo, number, opt)
 
-	var r0 []github.IssueComment
-	if rf, ok := ret.Get(0).(func(string, string, int, *github.IssueListCommentsOptions) []github.IssueComment); ok {
+	var r0 []*github.IssueComment
+	if rf, ok := ret.Get(0).(func(string, string, int, *github.IssueListCommentsOptions) []*github.IssueComment); ok {
 		r0 = rf(owner, repo, number, opt)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]github.IssueComment)
+			r0 = ret.Get(0).([]*github.IssueComment)
 		}
 	}
 

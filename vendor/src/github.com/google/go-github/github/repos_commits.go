@@ -15,13 +15,15 @@ import (
 // Note that it's wrapping a Commit, so author/committer information is in two places,
 // but contain different details about them: in RepositoryCommit "github details", in Commit - "git details".
 type RepositoryCommit struct {
-	SHA       *string  `json:"sha,omitempty"`
-	Commit    *Commit  `json:"commit,omitempty"`
-	Author    *User    `json:"author,omitempty"`
-	Committer *User    `json:"committer,omitempty"`
-	Parents   []Commit `json:"parents,omitempty"`
-	Message   *string  `json:"message,omitempty"`
-	HTMLURL   *string  `json:"html_url,omitempty"`
+	SHA         *string  `json:"sha,omitempty"`
+	Commit      *Commit  `json:"commit,omitempty"`
+	Author      *User    `json:"author,omitempty"`
+	Committer   *User    `json:"committer,omitempty"`
+	Parents     []Commit `json:"parents,omitempty"`
+	Message     *string  `json:"message,omitempty"`
+	HTMLURL     *string  `json:"html_url,omitempty"`
+	URL         *string  `json:"url,omitempty"`
+	CommentsURL *string  `json:"comments_url,omitempty"`
 
 	// Details about how many changes were made in this commit. Only filled in during GetCommit!
 	Stats *CommitStats `json:"stats,omitempty"`
@@ -33,7 +35,7 @@ func (r RepositoryCommit) String() string {
 	return Stringify(r)
 }
 
-// CommitStats represents the number of additions / deletions from a file in a given RepositoryCommit.
+// CommitStats represents the number of additions / deletions from a file in a given RepositoryCommit or GistCommit.
 type CommitStats struct {
 	Additions *int `json:"additions,omitempty"`
 	Deletions *int `json:"deletions,omitempty"`
@@ -104,7 +106,7 @@ type CommitsListOptions struct {
 // ListCommits lists the commits of a repository.
 //
 // GitHub API docs: http://developer.github.com/v3/repos/commits/#list
-func (s *RepositoriesService) ListCommits(owner, repo string, opt *CommitsListOptions) ([]RepositoryCommit, *Response, error) {
+func (s *RepositoriesService) ListCommits(owner, repo string, opt *CommitsListOptions) ([]*RepositoryCommit, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/commits", owner, repo)
 	u, err := addOptions(u, opt)
 	if err != nil {
@@ -116,7 +118,7 @@ func (s *RepositoriesService) ListCommits(owner, repo string, opt *CommitsListOp
 		return nil, nil, err
 	}
 
-	commits := new([]RepositoryCommit)
+	commits := new([]*RepositoryCommit)
 	resp, err := s.client.Do(req, commits)
 	if err != nil {
 		return nil, resp, err
@@ -137,6 +139,9 @@ func (s *RepositoriesService) GetCommit(owner, repo, sha string) (*RepositoryCom
 	if err != nil {
 		return nil, nil, err
 	}
+
+	// TODO: remove custom Accept header when this API fully launches.
+	req.Header.Set("Accept", mediaTypeGitSigningPreview)
 
 	commit := new(RepositoryCommit)
 	resp, err := s.client.Do(req, commit)
@@ -162,8 +167,7 @@ func (s *RepositoriesService) GetCommitSHA1(owner, repo, ref, lastSHA string) (s
 		req.Header.Set("If-None-Match", `"`+lastSHA+`"`)
 	}
 
-	// TODO: remove custom Accept header when this API fully launches.
-	req.Header.Set("Accept", mediaTypeCommitReferenceSHAPreview)
+	req.Header.Set("Accept", mediaTypeV3SHA)
 
 	var buf bytes.Buffer
 	resp, err := s.client.Do(req, &buf)

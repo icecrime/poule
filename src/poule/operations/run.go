@@ -33,7 +33,7 @@ func (r *IssueRunner) ListItems(context *Context, op Operation, page int) ([]gh.
 	// Convert the result to items.
 	items := []gh.Item{}
 	for i, _ := range issues {
-		items = append(items, gh.MakeIssueItem(&issues[i]))
+		items = append(items, gh.MakeIssueItem(issues[i]))
 	}
 	return items, resp, err
 }
@@ -55,7 +55,7 @@ func (r *PullRequestRunner) ListItems(context *Context, op Operation, page int) 
 	// Convert the result to items.
 	items := []gh.Item{}
 	for i, _ := range prs {
-		items = append(items, gh.MakePullRequestItem(&prs[i]))
+		items = append(items, gh.MakePullRequestItem(prs[i]))
 	}
 	return items, resp, err
 }
@@ -130,7 +130,12 @@ func RunSingle(c *configuration.Config, op Operation, item gh.Item) error {
 	switch filterResult {
 	case Accept:
 		if s := op.Describe(&context, item, userdata); s != "" {
-			logrus.Info(s)
+			logrus.WithFields(logrus.Fields{
+				"dry_run":    c.DryRun,
+				"item_num":   item.Number(),
+				"item_type":  item.Type(),
+				"repository": c.Repository,
+			}).Info(s)
 		}
 		if !c.DryRun {
 			if err := op.Apply(&context, item, userdata); err != nil {

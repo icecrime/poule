@@ -29,7 +29,7 @@ func TestAuthorizationsService_List(t *testing.T) {
 		t.Errorf("Authorizations.List returned error: %v", err)
 	}
 
-	want := []Authorization{{ID: Int(1)}}
+	want := []*Authorization{{ID: Int(1)}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Authorizations.List returned %+v, want %+v", *got[0].ID, *want[0].ID)
 	}
@@ -247,5 +247,94 @@ func TestAuthorizationsService_Revoke(t *testing.T) {
 	_, err := client.Authorizations.Revoke("id", "t")
 	if err != nil {
 		t.Errorf("Authorizations.Revoke returned error: %v", err)
+	}
+}
+
+func TestListGrants(t *testing.T) {
+	setup()
+	defer teardown()
+
+	mux.HandleFunc("/applications/grants", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+		fmt.Fprint(w, `[{"id": 1}]`)
+	})
+
+	got, _, err := client.Authorizations.ListGrants()
+	if err != nil {
+		t.Errorf("OAuthAuthorizations.ListGrants returned error: %v", err)
+	}
+
+	want := []*Grant{{ID: Int(1)}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("OAuthAuthorizations.ListGrants = %+v, want %+v", got, want)
+	}
+}
+
+func TestGetGrant(t *testing.T) {
+	setup()
+	defer teardown()
+
+	mux.HandleFunc("/applications/grants/1", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+		fmt.Fprint(w, `{"id": 1}`)
+	})
+
+	got, _, err := client.Authorizations.GetGrant(1)
+	if err != nil {
+		t.Errorf("OAuthAuthorizations.GetGrant returned error: %v", err)
+	}
+
+	want := &Grant{ID: Int(1)}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("OAuthAuthorizations.GetGrant = %+v, want %+v", got, want)
+	}
+}
+
+func TestDeleteGrant(t *testing.T) {
+	setup()
+	defer teardown()
+
+	mux.HandleFunc("/applications/grants/1", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "DELETE")
+	})
+
+	_, err := client.Authorizations.DeleteGrant(1)
+	if err != nil {
+		t.Errorf("OAuthAuthorizations.DeleteGrant returned error: %v", err)
+	}
+}
+
+func TestAuthorizationsService_CreateImpersonation(t *testing.T) {
+	setup()
+	defer teardown()
+
+	mux.HandleFunc("/admin/users/u/authorizations", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "POST")
+		fmt.Fprint(w, `{"id":1}`)
+	})
+
+	req := &AuthorizationRequest{Scopes: []Scope{ScopePublicRepo}}
+	got, _, err := client.Authorizations.CreateImpersonation("u", req)
+	if err != nil {
+		t.Errorf("Authorizations.CreateImpersonation returned error: %+v", err)
+	}
+
+	want := &Authorization{ID: Int(1)}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Authorizations.CreateImpersonation returned %+v, want %+v", *got.ID, *want.ID)
+	}
+}
+
+func TestAuthorizationsService_DeleteImpersonation(t *testing.T) {
+	setup()
+	defer teardown()
+
+	mux.HandleFunc("/admin/users/u/authorizations", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "DELETE")
+	})
+
+	_, err := client.Authorizations.DeleteImpersonation("u")
+	if err != nil {
+		t.Errorf("Authorizations.DeleteImpersonation returned error: %+v", err)
 	}
 }

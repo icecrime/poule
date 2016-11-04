@@ -1,3 +1,8 @@
+// Copyright 2014 The go-github AUTHORS. All rights reserved.
+//
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package github
 
 import (
@@ -117,24 +122,6 @@ func TestRepositoriesService_GetReadme(t *testing.T) {
 	if !reflect.DeepEqual(readme, want) {
 		t.Errorf("Repositories.GetReadme returned %+v, want %+v", readme, want)
 	}
-}
-
-func ExampleRepositoriesService_GetReadme() {
-	client := NewClient(nil)
-
-	readme, _, err := client.Repositories.GetReadme("google", "go-github", nil)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	content, err := readme.GetContent()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Printf("google/go-github README:\n%v\n", content)
 }
 
 func TestRepositoriesService_DownloadContents_Success(t *testing.T) {

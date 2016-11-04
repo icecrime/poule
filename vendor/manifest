@@ -2,12 +2,6 @@
 	"version": 0,
 	"dependencies": [
 		{
-			"importpath": "github.com/BurntSushi/toml",
-			"repository": "https://github.com/BurntSushi/toml",
-			"revision": "99064174e013895bbd9b025c31100bd1d9b590ca",
-			"branch": "master"
-		},
-		{
 			"importpath": "github.com/Sirupsen/logrus",
 			"repository": "https://github.com/Sirupsen/logrus",
 			"revision": "3ec0642a7fb6488f65b06f9040adc67e3990296a",
@@ -35,7 +29,7 @@
 		{
 			"importpath": "github.com/google/go-github/github",
 			"repository": "https://github.com/google/go-github",
-			"revision": "7f154f4cabd28c7b5962c37a5f59bb813ae3791a",
+			"revision": "54943985871d3b59053804af48b8347a3c232938",
 			"branch": "master",
 			"path": "/github"
 		},
@@ -137,7 +131,7 @@
 		{
 			"importpath": "gopkg.in/yaml.v2",
 			"repository": "https://gopkg.in/yaml.v2",
-			"revision": "a83829b6f1293c91addabc89d0571c246397bbf4",
+			"revision": "a5b47d31c556af34a302ce5d659e6fea44d90de0",
 			"branch": "v2"
 		}
 	]

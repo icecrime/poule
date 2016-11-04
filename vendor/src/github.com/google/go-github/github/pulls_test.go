@@ -32,12 +32,11 @@ func TestPullRequestsService_List(t *testing.T) {
 
 	opt := &PullRequestListOptions{"closed", "h", "b", "created", "desc", ListOptions{Page: 2}}
 	pulls, _, err := client.PullRequests.List("o", "r", opt)
-
 	if err != nil {
 		t.Errorf("PullRequests.List returned error: %v", err)
 	}
 
-	want := []PullRequest{{Number: Int(1)}}
+	want := []*PullRequest{{Number: Int(1)}}
 	if !reflect.DeepEqual(pulls, want) {
 		t.Errorf("PullRequests.List returned %+v, want %+v", pulls, want)
 	}
@@ -58,7 +57,6 @@ func TestPullRequestsService_Get(t *testing.T) {
 	})
 
 	pull, _, err := client.PullRequests.Get("o", "r", 1)
-
 	if err != nil {
 		t.Errorf("PullRequests.Get returned error: %v", err)
 	}
@@ -79,7 +77,6 @@ func TestPullRequestsService_Get_headAndBase(t *testing.T) {
 	})
 
 	pull, _, err := client.PullRequests.Get("o", "r", 1)
-
 	if err != nil {
 		t.Errorf("PullRequests.Get returned error: %v", err)
 	}
@@ -100,24 +97,40 @@ func TestPullRequestsService_Get_headAndBase(t *testing.T) {
 	}
 }
 
-func TestPullRequestService_Get_DiffURLAndPatchURL(t *testing.T) {
+func TestPullRequestsService_Get_urlFields(t *testing.T) {
 	setup()
 	defer teardown()
 
 	mux.HandleFunc("/repos/o/r/pulls/1", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
-		fmt.Fprint(w, `{"number":1, 
-			"diff_url": "https://github.com/octocat/Hello-World/pull/1347.diff", 
-			"patch_url": "https://github.com/octocat/Hello-World/pull/1347.patch"}`)
+		fmt.Fprint(w, `{"number":1,
+			"url": "https://api.github.com/repos/octocat/Hello-World/pulls/1347",
+			"html_url": "https://github.com/octocat/Hello-World/pull/1347",
+			"issue_url": "https://api.github.com/repos/octocat/Hello-World/issues/1347",
+			"statuses_url": "https://api.github.com/repos/octocat/Hello-World/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e",
+			"diff_url": "https://github.com/octocat/Hello-World/pull/1347.diff",
+			"patch_url": "https://github.com/octocat/Hello-World/pull/1347.patch",
+			"review_comments_url": "https://api.github.com/repos/octocat/Hello-World/pulls/1347/comments",
+			"review_comment_url": "https://api.github.com/repos/octocat/Hello-World/pulls/comments{/number}"}`)
 	})
 
 	pull, _, err := client.PullRequests.Get("o", "r", 1)
-
 	if err != nil {
 		t.Errorf("PullRequests.Get returned error: %v", err)
 	}
 
-	want := &PullRequest{Number: Int(1), DiffURL: String("https://github.com/octocat/Hello-World/pull/1347.diff"), PatchURL: String("https://github.com/octocat/Hello-World/pull/1347.patch")}
+	want := &PullRequest{
+		Number:            Int(1),
+		URL:               String("https://api.github.com/repos/octocat/Hello-World/pulls/1347"),
+		HTMLURL:           String("https://github.com/octocat/Hello-World/pull/1347"),
+		IssueURL:          String("https://api.github.com/repos/octocat/Hello-World/issues/1347"),
+		StatusesURL:       String("https://api.github.com/repos/octocat/Hello-World/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e"),
+		DiffURL:           String("https://github.com/octocat/Hello-World/pull/1347.diff"),
+		PatchURL:          String("https://github.com/octocat/Hello-World/pull/1347.patch"),
+		ReviewCommentsURL: String("https://api.github.com/repos/octocat/Hello-World/pulls/1347/comments"),
+		ReviewCommentURL:  String("https://api.github.com/repos/octocat/Hello-World/pulls/comments{/number}"),
+	}
+
 	if !reflect.DeepEqual(pull, want) {
 		t.Errorf("PullRequests.Get returned %+v, want %+v", pull, want)
 	}
@@ -230,7 +243,7 @@ func TestPullRequestsService_ListCommits(t *testing.T) {
 		t.Errorf("PullRequests.ListCommits returned error: %v", err)
 	}
 
-	want := []RepositoryCommit{
+	want := []*RepositoryCommit{
 		{
 			SHA: String("3"),
 			Parents: []Commit{
@@ -289,7 +302,7 @@ func TestPullRequestsService_ListFiles(t *testing.T) {
 		t.Errorf("PullRequests.ListFiles returned error: %v", err)
 	}
 
-	want := []CommitFile{
+	want := []*CommitFile{
 		{
 			SHA:       String("6dcb09b5b57875f334f61aebed695e2e4193db5e"),
 			Filename:  String("file1.txt"),
@@ -341,6 +354,7 @@ func TestPullRequestsService_Merge(t *testing.T) {
 
 	mux.HandleFunc("/repos/o/r/pulls/1/merge", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "PUT")
+		testHeader(t, r, "Accept", mediaTypeSquashPreview)
 		fmt.Fprint(w, `
 			{
 			  "sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
@@ -349,7 +363,8 @@ func TestPullRequestsService_Merge(t *testing.T) {
 			}`)
 	})
 
-	merge, _, err := client.PullRequests.Merge("o", "r", 1, "merging pull request")
+	options := &PullRequestOptions{Squash: true}
+	merge, _, err := client.PullRequests.Merge("o", "r", 1, "merging pull request", options)
 	if err != nil {
 		t.Errorf("PullRequests.Merge returned error: %v", err)
 	}

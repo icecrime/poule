@@ -20,78 +20,94 @@ type PartialMessage struct {
 	Action         string `json:"action"`
 }
 
-func (s *Server) handler(message *nsq.Message) error {
-	logrus.Debugf("nsq message: id=%s timestamp=%d", message.ID, message.Timestamp)
-	for name, trigger := range s.config.Triggers {
-		logrus.Debugf("processing trigger: %s", name)
-		// TODO: parse repo
+func (s *Server) HandleMessage(message *nsq.Message) error {
+	// Unserialize the GitHub webhook payload into a partial message in order to inspect the type
+	// of event and handle accordingly.
+	var m PartialMessage
+	if err := json.Unmarshal(message.Body, &m); err != nil {
+		return err
+	}
+	logrus.Debugf("GitHub data: event=%s action=%s", m.GitHubEvent, m.Action)
 
-		if err := s.dispatchEvent(message.Body, trigger); err != nil {
+	// Go through the configurations that match this (event, action) couple. In the `Triggers` map,
+	// keys are GitHub event types, and values are associated actions.
+outer_loop:
+	for _, actionConfig := range s.config.Actions {
+		if actionConfig.Triggers.Contains(m.GitHubEvent, m.Action) {
+			if err := s.dispatchEvent(m.GitHubEvent, message.Body, actionConfig); err != nil {
+				return err
+			}
+			continue outer_loop
+		}
+	}
+	return nil
+}
+
+func (s *Server) dispatchEvent(event string, data []byte, action ActionConfiguration) error {
+	item, err := makeGitHubItem(event, data)
+	switch {
+	case err != nil:
+		return err
+	case item == nil:
+		return nil
+	default:
+		return s.executeAction(action, *item)
+	}
+}
+
+func (s *Server) executeAction(action ActionConfiguration, item gh.Item) error {
+	// Skip the execution if the action isn't configured for that repository.
+	repo := item.Repository()
+	if !action.Repositories.Contains(repo) {
+		logrus.Debugf("filtering event for repository=%s", repo)
+		return nil
+	}
+
+	// Apply all operations on the associated repository for that item.
+	for _, operationConfig := range action.Operations {
+		logrus.Debugf("running operation: repo=%s type=%s", repo, operationConfig.Type)
+		descriptor, ok := catalog.ByNameIndex[operationConfig.Type]
+		if !ok {
+			return errors.Errorf("unknown operation %q", operationConfig.Type)
+		}
+		op, err := descriptor.OperationFromConfig(operationConfig.Settings)
+		if err != nil {
 			return err
 		}
 
+		if err := operations.RunSingle(&configuration.Config{
+			RunDelay:   s.config.RunDelay,
+			DryRun:     s.config.DryRun,
+			Token:      s.config.Token,
+			TokenFile:  s.config.TokenFile,
+			Repository: repo,
+		}, op, item); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (s *Server) dispatchEvent(data []byte, trigger TriggerConfiguration) error {
-	var m PartialMessage
-	if err := json.Unmarshal(data, &m); err != nil {
-		return err
-	}
-
-	for _, e := range trigger.Events {
-		if m.GitHubEvent == e.Type && m.Action == e.Action {
-			switch m.GitHubEvent {
-			case "pull_request":
-				if err := s.handlePullRequest(data, trigger); err != nil {
-					return err
-				}
-			default:
-				logrus.Warnf("unhandled event type: %s", m.GitHubEvent)
-			}
+func makeGitHubItem(event string, data []byte) (*gh.Item, error) {
+	switch event {
+	case "issues":
+		var evt *github.IssuesEvent
+		if err := json.Unmarshal(data, &evt); err != nil {
+			return nil, err
 		}
-	}
-
-	return nil
-}
-
-func (s *Server) handlePullRequest(data []byte, trigger TriggerConfiguration) error {
-	var evt *github.PullRequestEvent
-	if err := json.Unmarshal(data, &evt); err != nil {
-		return err
-	}
-
-	logrus.Debugf("event received: repo=%s", *evt.Repo.FullName)
-	for _, repo := range trigger.Repositories {
-		logrus.Debugf("checking repo: %s", repo)
-		if *evt.Repo.FullName == repo {
-			logrus.Infof("running operations for repo: %s", repo)
-			for _, operationConfig := range trigger.Operations {
-				logrus.Debugf("running operation: type=%s", operationConfig.Type)
-				descriptor, ok := catalog.ByNameIndex[operationConfig.Type]
-				if !ok {
-					return errors.Errorf("unknown operation %q", operationConfig.Type)
-				}
-				op, err := descriptor.OperationFromConfig(operationConfig.Settings)
-				if err != nil {
-					return err
-				}
-
-				item := gh.MakePullRequestItem(evt.PullRequest)
-				if err := operations.RunSingle(&configuration.Config{
-					RunDelay:   s.config.RunDelay,
-					DryRun:     s.config.DryRun,
-					Token:      s.config.Token,
-					TokenFile:  s.config.TokenFile,
-					Repository: repo,
-				}, op, item); err != nil {
-					return err
-				}
-			}
-			break
+		// Yet another quirk of the GitHub API: the "repository" field inside
+		// the issue object is nil, but not at the event root.
+		evt.Issue.Repository = evt.Repo
+		item := gh.MakeIssueItem(evt.Issue)
+		return &item, nil
+	case "pull_request":
+		var evt *github.PullRequestEvent
+		if err := json.Unmarshal(data, &evt); err != nil {
+			return nil, err
 		}
+		item := gh.MakePullRequestItem(evt.PullRequest)
+		return &item, nil
+	default:
+		return nil, nil
 	}
-
-	return nil
 }

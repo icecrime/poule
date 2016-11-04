@@ -32,8 +32,8 @@ func MakeLabel(name string) github.Label {
 	}
 }
 
-func MakeStatus(context, status string, createdAt time.Time) github.RepoStatus {
-	return github.RepoStatus{
+func MakeStatus(context, status string, createdAt time.Time) *github.RepoStatus {
+	return &github.RepoStatus{
 		Context:   &context,
 		CreatedAt: &createdAt,
 		State:     &status,

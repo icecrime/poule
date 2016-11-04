@@ -43,7 +43,7 @@ func TestRepositoriesService_ListCommits(t *testing.T) {
 		t.Errorf("Repositories.ListCommits returned error: %v", err)
 	}
 
-	want := []RepositoryCommit{{SHA: String("s")}}
+	want := []*RepositoryCommit{{SHA: String("s")}}
 	if !reflect.DeepEqual(commits, want) {
 		t.Errorf("Repositories.ListCommits returned %+v, want %+v", commits, want)
 	}
@@ -55,6 +55,7 @@ func TestRepositoriesService_GetCommit(t *testing.T) {
 
 	mux.HandleFunc("/repos/o/r/commits/s", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
+		testHeader(t, r, "Accept", mediaTypeGitSigningPreview)
 		fmt.Fprintf(w, `{
 		  "sha": "s",
 		  "commit": { "message": "m" },
@@ -126,7 +127,7 @@ func TestRepositoriesService_GetCommitSHA1(t *testing.T) {
 
 	mux.HandleFunc("/repos/o/r/commits/master", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
-		testHeader(t, r, "Accept", mediaTypeCommitReferenceSHAPreview)
+		testHeader(t, r, "Accept", mediaTypeV3SHA)
 
 		fmt.Fprintf(w, sha1)
 	})
@@ -143,7 +144,7 @@ func TestRepositoriesService_GetCommitSHA1(t *testing.T) {
 
 	mux.HandleFunc("/repos/o/r/commits/tag", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
-		testHeader(t, r, "Accept", mediaTypeCommitReferenceSHAPreview)
+		testHeader(t, r, "Accept", mediaTypeV3SHA)
 		testHeader(t, r, "If-None-Match", `"`+sha1+`"`)
 
 		w.WriteHeader(http.StatusNotModified)

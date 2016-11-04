@@ -20,7 +20,7 @@ type RepositoryListForksOptions struct {
 // ListForks lists the forks of the specified repository.
 //
 // GitHub API docs: http://developer.github.com/v3/repos/forks/#list-forks
-func (s *RepositoriesService) ListForks(owner, repo string, opt *RepositoryListForksOptions) ([]Repository, *Response, error) {
+func (s *RepositoriesService) ListForks(owner, repo string, opt *RepositoryListForksOptions) ([]*Repository, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/forks", owner, repo)
 	u, err := addOptions(u, opt)
 	if err != nil {
@@ -32,7 +32,7 @@ func (s *RepositoriesService) ListForks(owner, repo string, opt *RepositoryListF
 		return nil, nil, err
 	}
 
-	repos := new([]Repository)
+	repos := new([]*Repository)
 	resp, err := s.client.Do(req, repos)
 	if err != nil {
 		return nil, resp, err
@@ -50,7 +50,7 @@ type RepositoryCreateForkOptions struct {
 
 // CreateFork creates a fork of the specified repository.
 //
-// GitHub API docs: http://developer.github.com/v3/repos/forks/#list-forks
+// GitHub API docs: https://developer.github.com/v3/repos/forks/#create-a-fork
 func (s *RepositoriesService) CreateFork(owner, repo string, opt *RepositoryCreateForkOptions) (*Repository, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/forks", owner, repo)
 	u, err := addOptions(u, opt)

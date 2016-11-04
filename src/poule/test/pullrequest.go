@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"poule/gh"
 
 	"github.com/google/go-github/github"
@@ -48,12 +49,14 @@ func (p *PullRequestBuilder) Commits(commits int) *PullRequestBuilder {
 
 func (p *PullRequestBuilder) HeadBranch(username, repository, SHA string) *PullRequestBuilder {
 	p.Value.Head = &github.PullRequestBranch{
+		Ref: MakeString(SHA),
 		Repo: &github.Repository{
 			FullName: MakeString(username + "/" + repository),
 			Name:     MakeString(repository),
 			Owner: &github.User{
 				Login: MakeString(username),
 			},
+			SSHURL: MakeString(fmt.Sprintf("ssh@%s", repository)),
 		},
 		SHA: MakeString(SHA),
 	}

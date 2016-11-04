@@ -7,8 +7,8 @@ import (
 	"poule/configuration"
 	"poule/server"
 
-	"github.com/BurntSushi/toml"
 	"github.com/urfave/cli"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var serveCommand = cli.Command{
@@ -25,11 +25,6 @@ var serveCommand = cli.Command{
 }
 
 func doServeCommand(c *cli.Context) {
-	// TODO
-	// - Read mandatory configuration file associating event types (e.g., pull
-	//   request created) with a set of operations
-	// - Listen to GitHub webhooks with NSQ
-	// - Match event types and execute associated operations
 	cfgPath := c.String("config")
 	b, err := ioutil.ReadFile(cfgPath)
 	if err != nil {
@@ -37,8 +32,8 @@ func doServeCommand(c *cli.Context) {
 	}
 
 	// Read the YAML configuration file identified by the argument.
-	serveConfig := server.ServerConfig{}
-	if _, err := toml.Decode(string(b), &serveConfig); err != nil {
+	serveConfig := server.ServerConfiguration{}
+	if err := yaml.Unmarshal(b, &serveConfig); err != nil {
 		log.Fatalf("Failed to read config file %q: %v", cfgPath, err)
 	}
 
