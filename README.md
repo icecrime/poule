@@ -1,7 +1,7 @@
 Poule
 =====
 
-# /!\ Work in progress /!\
+[![CircleCI](https://circleci.com/gh/icecrime/poule.svg?style=svg)](https://circleci.com/gh/icecrime/poule)
 
 # Description
 
@@ -13,7 +13,7 @@ three different contexts:
   2. As part of a batch job alongside multiple other operations.
   3. As part of a long-running daemon, triggered by GitHub webhooks.
 
-## 1. One-time operations
+### 1. One-time operations
 
 Example:
 
@@ -21,7 +21,7 @@ Example:
 $> poule --repository docker/docker --token-file ~/.gitthub-token --dry-run=true dco-check --filter is:pr
 ```
 
-## 2. Batch job
+### 2. Batch job
 
 Example:
 
@@ -36,7 +36,7 @@ operations:
       }
 ```
 
-## 3. Long running job
+### 3. Long running job
 
 Poule can connect to NSQ to receive events for Github issues and pull requests.  It will then use
 this event data to perform the actions listed in a config file.
