@@ -1,0 +1,9 @@
+dependencies:
+  pre:
+    - go get github.com/constabulary/gb/...
+  override:
+    - make
+
+test:
+  override:
+    - make test
