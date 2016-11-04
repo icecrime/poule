@@ -7,15 +7,17 @@ import (
 	"sync"
 	"syscall"
 
+	"poule/configuration"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/bitly/go-nsq"
 )
 
 type Server struct {
-	config *ServerConfiguration
+	config *configuration.Server
 }
 
-func NewServer(cfg *ServerConfiguration) (*Server, error) {
+func NewServer(cfg *configuration.Server) (*Server, error) {
 	return &Server{
 		config: cfg,
 	}, nil
@@ -66,7 +68,7 @@ func NewQueue(topic, channel, lookupd string, handler nsq.Handler) (*Queue, erro
 	return &Queue{Consumer: consumer}, nil
 }
 
-func createQueues(c *NSQConfig, handler nsq.Handler) []*Queue {
+func createQueues(c *configuration.NSQConfig, handler nsq.Handler) []*Queue {
 	// Subscribe to the message queues for each repository.
 	queues := make([]*Queue, 0, len(c.Topics))
 	for _, topic := range c.Topics {

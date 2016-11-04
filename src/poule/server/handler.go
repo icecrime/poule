@@ -43,7 +43,7 @@ outer_loop:
 	return nil
 }
 
-func (s *Server) dispatchEvent(event string, data []byte, action ActionConfiguration) error {
+func (s *Server) dispatchEvent(event string, data []byte, action configuration.Action) error {
 	item, err := makeGitHubItem(event, data)
 	switch {
 	case err != nil:
@@ -55,7 +55,7 @@ func (s *Server) dispatchEvent(event string, data []byte, action ActionConfigura
 	}
 }
 
-func (s *Server) executeAction(action ActionConfiguration, item gh.Item) error {
+func (s *Server) executeAction(action configuration.Action, item gh.Item) error {
 	// Skip the execution if the action isn't configured for that repository.
 	repo := item.Repository()
 	if !action.Repositories.Contains(repo) {

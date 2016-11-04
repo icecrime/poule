@@ -32,7 +32,7 @@ func doServeCommand(c *cli.Context) {
 	}
 
 	// Read the YAML configuration file identified by the argument.
-	serveConfig := server.ServerConfiguration{}
+	serveConfig := configuration.Server{}
 	if err := yaml.Unmarshal(b, &serveConfig); err != nil {
 		log.Fatalf("Failed to read config file %q: %v", cfgPath, err)
 	}

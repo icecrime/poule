@@ -3,9 +3,7 @@ dry_run:    True
 
 nsq_channel: "poule-dev"
 nsq_lookupd: "127.0.0.1:4161"
-nsq_topics:  [
-    "hooks-docker"
-]
+nsq_topics:  [ "hooks-docker" ]
 
 configuration:
 
@@ -36,7 +34,7 @@ configuration:
                 patterns: {
                     area/builder:        [ "dockerfile", "docker build" ],
                     area/distribution:   [ "docker login", "docker logout", "docker pull", "docker push", "docker search" ],
-                    area/plugin:         [ "docker plugin" ],
+                    area/plugins:        [ "docker plugin" ],
                     area/network:        [ "docker network", "ipvs", "vxlan" ],
                     area/runtime:        [ "oci runtime error" ],
                     area/security/trust: [ "docker_content_trust" ],
