@@ -25,9 +25,16 @@ func main() {
 		return nil
 	}
 
+	// Register the top-level 'batch' and 'serve' commands.
 	app.Commands = []cli.Command{
 		batchCommand,
 		serveCommand,
+	}
+
+	// Register each operation as an individual command.
+	for i, _ := range catalog.Index {
+		descriptor := catalog.Index[i]
+		app.Commands = append(app.Commands, makeCommand(descriptor))
 	}
 
 	app.Flags = []cli.Flag{

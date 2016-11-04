@@ -65,7 +65,6 @@ func (s *Server) executeAction(action ActionConfiguration, item gh.Item) error {
 
 	// Apply all operations on the associated repository for that item.
 	for _, operationConfig := range action.Operations {
-		logrus.Debugf("running operation: repo=%s type=%s", repo, operationConfig.Type)
 		descriptor, ok := catalog.ByNameIndex[operationConfig.Type]
 		if !ok {
 			return errors.Errorf("unknown operation %q", operationConfig.Type)
@@ -74,6 +73,11 @@ func (s *Server) executeAction(action ActionConfiguration, item gh.Item) error {
 		if err != nil {
 			return err
 		}
+
+		logrus.WithFields(logrus.Fields{
+			"operation":  operationConfig.Type,
+			"repository": repo,
+		}).Info("running operation")
 
 		if err := operations.RunSingle(&configuration.Config{
 			RunDelay:   s.config.RunDelay,
@@ -90,7 +94,7 @@ func (s *Server) executeAction(action ActionConfiguration, item gh.Item) error {
 
 func makeGitHubItem(event string, data []byte) (*gh.Item, error) {
 	switch event {
-	case "issues":
+	case "issues", "issue_comment":
 		var evt *github.IssuesEvent
 		if err := json.Unmarshal(data, &evt); err != nil {
 			return nil, err
@@ -100,7 +104,7 @@ func makeGitHubItem(event string, data []byte) (*gh.Item, error) {
 		evt.Issue.Repository = evt.Repo
 		item := gh.MakeIssueItem(evt.Issue)
 		return &item, nil
-	case "pull_request":
+	case "pull_request", "pull_request_review", "pull_request_review_comment":
 		var evt *github.PullRequestEvent
 		if err := json.Unmarshal(data, &evt); err != nil {
 			return nil, err

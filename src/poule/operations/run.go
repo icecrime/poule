@@ -80,27 +80,8 @@ func Run(c *configuration.Config, op Operation, runner Runner, filters []*settin
 				}
 			}
 
-			// Apply operation-specific filtering.
-			filterResult, userdata, err := op.Filter(&context, item)
-			if err != nil {
+			if err := RunSingle(c, op, item); err != nil {
 				return err
-			}
-
-			// Proceed with operation application depending on the result of
-			// the filtering.
-			switch filterResult {
-			case Accept:
-				if s := op.Describe(&context, item, userdata); s != "" {
-					logrus.Info(s)
-				}
-				if !c.DryRun {
-					if err := op.Apply(&context, item, userdata); err != nil {
-						return err
-					}
-				}
-				break
-			case Terminal:
-				return nil
 			}
 		}
 

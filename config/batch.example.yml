@@ -1,7 +1,7 @@
 # These global settings will override any command line option passed to the
 # tool when invoking the `batch` command.
 delay:      30s
-dry-run:    True
+dry_run:    True
 repository: docker/docker
 
 # A list of operations to run as part of the batch job.

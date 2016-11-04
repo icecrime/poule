@@ -3,7 +3,9 @@ dry_run:    True
 
 nsq_channel: "poule-dev"
 nsq_lookupd: "127.0.0.1:4161"
-nsq_topics:  [ "hooks-docker" ]
+nsq_topics:  [
+    "hooks-docker"
+]
 
 configuration:
 

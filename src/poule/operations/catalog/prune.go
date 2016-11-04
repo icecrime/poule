@@ -31,7 +31,7 @@ type pruneConfig struct {
 func (d *pruneDescriptor) CommandLineDescription() CommandLineDescription {
 	return CommandLineDescription{
 		Name:        "prune",
-		Description: "Prune outdatedissues",
+		Description: "Prune outdated issues",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "action",
