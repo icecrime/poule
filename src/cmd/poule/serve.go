@@ -17,7 +17,7 @@ var serveCommand = cli.Command{
 	Flags: []cli.Flag{
 		cli.StringFlag{
 			Name:  "config, c",
-			Value: "poule.toml",
+			Value: "poule.yaml",
 			Usage: "Poule configuration",
 		},
 	},

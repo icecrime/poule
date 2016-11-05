@@ -28,10 +28,13 @@ func (s *Server) HandleMessage(message *nsq.Message) error {
 		return err
 	}
 
-	logrus.WithFields(logrus.Fields{
-		"action": m.Action,
-		"event":  m.GitHubEvent,
-	}).Debugf("received GitHub event")
+	// Avoid logging status event which are just too frequent and noisy.
+	if m.GitHubEvent != "status" {
+		logrus.WithFields(logrus.Fields{
+			"action": m.Action,
+			"event":  m.GitHubEvent,
+		}).Debugf("received GitHub event")
+	}
 
 	// Go through the configurations that match this (event, action) couple. In the `Triggers` map,
 	// keys are GitHub event types, and values are associated actions.
