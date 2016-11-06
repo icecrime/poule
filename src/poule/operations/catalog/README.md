@@ -1,22 +1,33 @@
 Poule operations
 ================
 
-| Operation        | Issues                  | Pull Requests           | Purpose                                                             |
-|------------------|:-----------------------:|:-----------------------:|---------------------------------------------------------------------|
-| `ci-label-clean` |                         | :ballot_box_with_check: | Remove CI failures labels where necessary.                          |
-| `dco-check`      |                         | :ballot_box_with_check: | Check for commit signatures, label and post a comment if missing.   |
-| `label`          | :ballot_box_with_check: | :ballot_box_with_check: | Auto-label issues and pull requests according on matching regexps.  |
-| `rebuild`        |                         | :ballot_box_with_check: | Rebuild all or selected pull request jobs.                          |
-| `version-label`  | :ballot_box_with_check: |                         | Add a `version/x` label based on Docker version string in the body. |
+| Operation        | Docker specific | Issues                  | Pull Requests           | Purpose                                                             |
+|------------------|:---------------:|:-----------------------:|:-----------------------:|---------------------------------------------------------------------|
+| `auto-milestone` | ~               |                         | :ballot_box_with_check: | Add merged pull requests to the upcoming milestone.                 |
+| `ci-label-clean` |                 |                         | :ballot_box_with_check: | Remove CI failures labels where necessary.                          |
+| `dco-check`      | :whale:         |                         | :ballot_box_with_check: | Check for commit signatures, label and post a comment if missing.   |
+| `label`          |                 | :ballot_box_with_check: | :ballot_box_with_check: | Auto-label issues and pull requests according on matching regexps.  |
+| `prune  `        |                 | :ballot_box_with_check: |                         | Manage issues with no activities.                                   |
+| `rebuild`        | :whale:         |                         | :ballot_box_with_check: | Rebuild all or selected pull request jobs.                          |
+| `version-label`  | :whale:         | :ballot_box_with_check: |                         | Add a `version/x` label based on Docker version string in the body. |
 
-## ci-label-clean
+## Auto milestone
 
-## dco-check
+The `auto-milestone` operation adds merged pull requests to the currently active milestone: it uses
+a `VERSION` file at the root of the repository to determine the current version in the making and
+searches for a milestone which title matches that version string.
 
-## label
+The goal is for every merged pull request to be attached to a milestone, in such way that it's
+trivial to determine from GitHub in which release a given changeset was shipped.
 
-Apply a label when the body of the GitHub issue or pull requests matches any of a list of provided
-regular expressions.
+## CI label cleaning
+
+## DCO check
+
+## Label
+
+The `label` operation applies a label when the body of the GitHub issue or pull requests matches any
+of a list of provided regular expressions.
 
 #### Configuration
 
@@ -40,14 +51,14 @@ settings: {
 }
 ```
 
-## prune
+## Prune
 
-## rebuild
+## Rebuild
 
-Rebuild triggers a rebuild operation on pull requests, optionally restricting to a given set of
-configurations or statuses (e.g., "documentation" configuration in status "failing"). The `rebuild`
-operation also takes an optional `label` parameter which is used as a signal: the operation looks
-for the label, triggers a rebuild, and removes it.
+The `rebuild` operation triggers a rebuild operation on pull requests, optionally restricting to a
+given set of configurations or statuses (e.g., "documentation" configuration in status "failing").
+The `rebuild` operation also takes an optional `label` parameter which is used as a signal: the
+operation looks for the label, triggers a rebuild, and removes it.
 
 Example use cases:
 - As a one-time command invokation to rebuild pull requests after a test was fixed.
@@ -72,4 +83,4 @@ settings: {
 }
 ```
 
-## version-label
+## Version label

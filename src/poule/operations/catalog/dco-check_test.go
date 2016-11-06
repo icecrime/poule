@@ -41,8 +41,8 @@ func TestDCOFailure(t *testing.T) {
 	item := test.NewPullRequestBuilder(test.IssueNumber).
 		Title("This is the title of a pull request").
 		Body("Lorem ipsum dolor sit amet, consectetur adipiscing elit").
-		BaseBranch(ctx.Username, ctx.Repository, "0x123").
-		HeadBranch(ctx.Username, ctx.Repository, "0x456").
+		BaseBranch(ctx.Username, ctx.Repository, "base", "0x123").
+		HeadBranch(ctx.Username, ctx.Repository, "head", "0x456").
 		Commits(1).
 		Item()
 
@@ -95,8 +95,8 @@ func TestDCOSuccess(t *testing.T) {
 	item := test.NewPullRequestBuilder(test.IssueNumber).
 		Title("This is the title of a pull request").
 		Body("Lorem ipsum dolor sit amet, consectetur adipiscing elit").
-		BaseBranch(ctx.Username, ctx.Repository, "0x123").
-		HeadBranch(ctx.Username, ctx.Repository, "0x456").
+		BaseBranch(ctx.Username, ctx.Repository, "base", "0x123").
+		HeadBranch(ctx.Username, ctx.Repository, "head", "0x456").
 		Commits(1).
 		Item()
 

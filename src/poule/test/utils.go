@@ -8,6 +8,12 @@ func AssertExpectations(clt *TestClient, t *testing.T) {
 	clt.MockRepositories.AssertExpectations(t)
 }
 
+func MakeBool(value bool) *bool {
+	v := new(bool)
+	*v = value
+	return v
+}
+
 func MakeInt(value int) *int {
 	v := new(int)
 	*v = value

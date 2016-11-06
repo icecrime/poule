@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"fmt"
 	"time"
 
 	"poule/configuration"
@@ -22,6 +23,9 @@ func (r *IssueRunner) ListItems(context *Context, op Operation, page int) ([]gh.
 	// Retrieve the list options from the operation, and override the page
 	// number with the current pointer.
 	listOptions := op.IssueListOptions(context)
+	if listOptions == nil {
+		return nil, nil, fmt.Errorf("operation doesn't provide list options for issues")
+	}
 	listOptions.ListOptions.Page = page
 
 	// List all issues for that repository with the specific settings.
@@ -44,6 +48,9 @@ func (r *PullRequestRunner) ListItems(context *Context, op Operation, page int) 
 	// Retrieve the list options from the operation, and override the page
 	// number with the current pointer.
 	listOptions := op.PullRequestListOptions(context)
+	if listOptions == nil {
+		return nil, nil, fmt.Errorf("operation doesn't provide list options for pull requests")
+	}
 	listOptions.ListOptions.Page = page
 
 	// List all issues for that repository with the specific settings.

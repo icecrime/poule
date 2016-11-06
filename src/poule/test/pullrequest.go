@@ -23,8 +23,9 @@ func (p *PullRequestBuilder) Item() gh.Item {
 	return gh.MakePullRequestItem(p.Value)
 }
 
-func (p *PullRequestBuilder) BaseBranch(username, repository, SHA string) *PullRequestBuilder {
+func (p *PullRequestBuilder) BaseBranch(username, repository, ref string, SHA string) *PullRequestBuilder {
 	p.Value.Base = &github.PullRequestBranch{
+		Ref: MakeString(ref),
 		Repo: &github.Repository{
 			FullName: MakeString(username + "/" + repository),
 			Name:     MakeString(repository),
@@ -47,9 +48,9 @@ func (p *PullRequestBuilder) Commits(commits int) *PullRequestBuilder {
 	return p
 }
 
-func (p *PullRequestBuilder) HeadBranch(username, repository, SHA string) *PullRequestBuilder {
+func (p *PullRequestBuilder) HeadBranch(username, repository, ref string, SHA string) *PullRequestBuilder {
 	p.Value.Head = &github.PullRequestBranch{
-		Ref: MakeString(SHA),
+		Ref: MakeString(ref),
 		Repo: &github.Repository{
 			FullName: MakeString(username + "/" + repository),
 			Name:     MakeString(repository),
@@ -60,6 +61,11 @@ func (p *PullRequestBuilder) HeadBranch(username, repository, SHA string) *PullR
 		},
 		SHA: MakeString(SHA),
 	}
+	return p
+}
+
+func (p *PullRequestBuilder) Merged(merged bool) *PullRequestBuilder {
+	p.Value.Merged = MakeBool(merged)
 	return p
 }
 

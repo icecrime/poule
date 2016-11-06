@@ -25,6 +25,9 @@ type IssuesService interface {
 	// Label API.
 	AddLabelsToIssue(owner string, repo string, number int, labels []string) ([]*github.Label, *github.Response, error)
 	RemoveLabelForIssue(owner string, repo string, number int, label string) (*github.Response, error)
+
+	// Milestones API.
+	ListMilestones(owner string, repo string, opt *github.MilestoneListOptions) ([]*github.Milestone, *github.Response, error)
 }
 
 //go:generate mockery -name=PullRequestsService -output ../test/mocks

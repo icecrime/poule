@@ -21,8 +21,8 @@ func TestCILabelClean(t *testing.T) {
 	issue := test.NewIssueBuilder(test.IssueNumber).
 		Labels([]string{configuration.FailingCILabel}).Value
 	pullr := test.NewPullRequestBuilder(test.IssueNumber).
-		HeadBranch(ctx.Username, ctx.Repository, test.CommitSHA[0]).
-		BaseBranch(ctx.Username, ctx.Repository, test.CommitSHA[1]).Value
+		HeadBranch(ctx.Username, ctx.Repository, "head", test.CommitSHA[0]).
+		BaseBranch(ctx.Username, ctx.Repository, "base", test.CommitSHA[1]).Value
 	clt.MockIssues.
 		On("RemoveLabelForIssue", ctx.Username, ctx.Repository, test.IssueNumber, configuration.FailingCILabel).
 		Return(nil, nil)
@@ -45,7 +45,7 @@ func TestCILabelClean(t *testing.T) {
 		t.Fatalf("Filter returned unexpected error %v", err)
 	}
 	if res != operations.Accept {
-		t.Fatalf("Filter should reject issue with label %q", test.IssueNumber)
+		t.Fatalf("Filter returned unexpected result %v", res)
 	}
 	if err := operation.Apply(ctx, item, userData); err != nil {
 		t.Fatalf("Apply returned unexpected error %v", err)

@@ -224,6 +224,38 @@ func (_m *IssuesService) ListComments(owner string, repo string, number int, opt
 	return r0, r1, r2
 }
 
+// ListMilestones provides a mock function with given fields: owner, repo, opt
+func (_m *IssuesService) ListMilestones(owner string, repo string, opt *github.MilestoneListOptions) ([]*github.Milestone, *github.Response, error) {
+	ret := _m.Called(owner, repo, opt)
+
+	var r0 []*github.Milestone
+	if rf, ok := ret.Get(0).(func(string, string, *github.MilestoneListOptions) []*github.Milestone); ok {
+		r0 = rf(owner, repo, opt)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*github.Milestone)
+		}
+	}
+
+	var r1 *github.Response
+	if rf, ok := ret.Get(1).(func(string, string, *github.MilestoneListOptions) *github.Response); ok {
+		r1 = rf(owner, repo, opt)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*github.Response)
+		}
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(string, string, *github.MilestoneListOptions) error); ok {
+		r2 = rf(owner, repo, opt)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // RemoveLabelForIssue provides a mock function with given fields: owner, repo, number, label
 func (_m *IssuesService) RemoveLabelForIssue(owner string, repo string, number int, label string) (*github.Response, error) {
 	ret := _m.Called(owner, repo, number, label)
