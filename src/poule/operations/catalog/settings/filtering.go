@@ -191,7 +191,7 @@ func makeWithLabelsFilter(value string) (*Filter, error) {
 }
 
 func (f WithLabelsFilter) ApplyIssue(issue *github.Issue) bool {
-	return hasAllLabels(f.labels, issue.Labels)
+	return gh.HasAllLabels(f.labels, issue.Labels)
 }
 
 // WithoutLabelsFilter filters issues based on whether they bear none of the
@@ -206,34 +206,7 @@ func makeWithoutLabelsFilter(value string) (*Filter, error) {
 }
 
 func (f WithoutLabelsFilter) ApplyIssue(issue *github.Issue) bool {
-	return !hasAnyLabels(f.labels, issue.Labels)
-}
-
-func hasLabel(label string, issueLabels []github.Label) bool {
-	for _, issueLabel := range issueLabels {
-		if label == *issueLabel.Name {
-			return true
-		}
-	}
-	return false
-}
-
-func hasAnyLabels(labels []string, issueLabels []github.Label) bool {
-	for _, label := range labels {
-		if hasLabel(label, issueLabels) {
-			return true
-		}
-	}
-	return false
-}
-
-func hasAllLabels(labels []string, issueLabels []github.Label) bool {
-	for _, label := range labels {
-		if !hasLabel(label, issueLabels) {
-			return false
-		}
-	}
-	return true
+	return !gh.HasAnyLabels(f.labels, issue.Labels)
 }
 
 // Type conversion utilities.

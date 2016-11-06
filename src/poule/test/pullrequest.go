@@ -68,6 +68,11 @@ func (p *PullRequestBuilder) Number(number int) *PullRequestBuilder {
 	return p
 }
 
+func (p *PullRequestBuilder) State(state string) *PullRequestBuilder {
+	p.Value.State = MakeString(state)
+	return p
+}
+
 func (p *PullRequestBuilder) Title(title string) *PullRequestBuilder {
 	p.Value.Title = MakeString(title)
 	return p
