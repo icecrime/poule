@@ -7,6 +7,7 @@ Poule operations
 | `ci-label-clean` |                         | :ballot_box_with_check: | Remove CI failures labels where necessary.                          |
 | `dco-check`      |                         | :ballot_box_with_check: | Check for commit signatures, label and post a comment if missing.   |
 | `label`          | :ballot_box_with_check: | :ballot_box_with_check: | Auto-label issues and pull requests according on matching regexps.  |
+| `rebuild`        |                         | :ballot_box_with_check: | Rebuild all or selected pull request jobs.                          |
 | `version-label`  | :ballot_box_with_check: |                         | Add a `version/x` label based on Docker version string in the body. |
 
 ## ci-label-audit
