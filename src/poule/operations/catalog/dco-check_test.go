@@ -79,7 +79,7 @@ func TestDCOFailure(t *testing.T) {
 	dcoTestStub(t, ctx, item)
 
 	// Verify that the posted comment has the expected automated token.
-	clt.MockIssues.AssertExpectations(t)
+	test.AssertExpectations(clt, t)
 	for _, call := range clt.MockPullRequests.Calls {
 		if call.Method == "CreateComment" {
 			if comment := call.Arguments[3].(*github.PullRequestComment); !strings.Contains(*comment.Body, dcoCommentToken) {

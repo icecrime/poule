@@ -85,8 +85,7 @@ func TestRebuild(t *testing.T) {
 	if err := operation.Apply(ctx, item, userData); err != nil {
 		t.Fatalf("Apply returned unexpected error %v", err)
 	}
-	clt.MockIssues.AssertExpectations(t)
-	clt.MockRepositories.AssertExpectations(t)
+	test.AssertExpectations(clt, t)
 }
 
 func TestRebuildAllConfigurations(t *testing.T) {
@@ -127,8 +126,7 @@ func TestRebuildAllConfigurations(t *testing.T) {
 	if err := operation.Apply(ctx, item, userData); err != nil {
 		t.Fatalf("Apply returned unexpected error %v", err)
 	}
-	clt.MockIssues.AssertExpectations(t)
-	clt.MockRepositories.AssertExpectations(t)
+	test.AssertExpectations(clt, t)
 }
 
 func TestRebuildSkipFailing(t *testing.T) {
@@ -150,7 +148,7 @@ func TestRebuildSkipFailing(t *testing.T) {
 	} else if res != operations.Reject {
 		t.Fatalf("Filter should reject issue with label %q", test.IssueNumber)
 	}
-	clt.MockIssues.AssertExpectations(t)
+	test.AssertExpectations(clt, t)
 }
 
 func TestRebuildExcludeClosed(t *testing.T) {
@@ -167,8 +165,7 @@ func TestRebuildExcludeClosed(t *testing.T) {
 	} else if res != operations.Reject {
 		t.Fatalf("Filter returned unexpected result %v", res)
 	}
-	clt.MockIssues.AssertExpectations(t)
-	clt.MockRepositories.AssertExpectations(t)
+	test.AssertExpectations(clt, t)
 }
 
 func TestRebuildWithLabelCriteria(t *testing.T) {
@@ -209,8 +206,7 @@ func TestRebuildWithLabelCriteria(t *testing.T) {
 	if err := operation.Apply(ctx, item, userData); err != nil {
 		t.Fatalf("Apply returned unexpected error %v", err)
 	}
-	clt.MockIssues.AssertExpectations(t)
-	clt.MockRepositories.AssertExpectations(t)
+	test.AssertExpectations(clt, t)
 }
 
 func TestRebuildWithLabelCriteriaMissing(t *testing.T) {
@@ -233,8 +229,7 @@ func TestRebuildWithLabelCriteriaMissing(t *testing.T) {
 	} else if res != operations.Reject {
 		t.Fatalf("Filter returned unexpected result %v", res)
 	}
-	clt.MockIssues.AssertExpectations(t)
-	clt.MockRepositories.AssertExpectations(t)
+	test.AssertExpectations(clt, t)
 }
 
 func TestRebuildNewConfiguration(t *testing.T) {
@@ -274,6 +269,5 @@ func TestRebuildNewConfiguration(t *testing.T) {
 	if err := operation.Apply(ctx, item, userData); err != nil {
 		t.Fatalf("Apply returned unexpected error %v", err)
 	}
-	clt.MockIssues.AssertExpectations(t)
-	clt.MockRepositories.AssertExpectations(t)
+	test.AssertExpectations(clt, t)
 }

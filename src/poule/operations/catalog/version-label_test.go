@@ -47,7 +47,7 @@ func TestVersionLabel(t *testing.T) {
 			t.Fatalf("Expected no error from Apply(), got %v", err)
 		}
 
-		clt.MockIssues.AssertExpectations(t)
+		test.AssertExpectations(clt, t)
 	}
 }
 
