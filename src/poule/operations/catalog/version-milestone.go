@@ -16,48 +16,48 @@ import (
 const DockerVersionURL = "https://raw.githubusercontent.com/docker/docker/master/VERSION"
 
 func init() {
-	registerOperation(&autoMilestoneDescriptor{})
+	registerOperation(&versionMilestoneDescriptor{})
 }
 
-type autoMilestoneDescriptor struct{}
+type versionMilestoneDescriptor struct{}
 
-func (d *autoMilestoneDescriptor) CommandLineDescription() CommandLineDescription {
+func (d *versionMilestoneDescriptor) CommandLineDescription() CommandLineDescription {
 	return CommandLineDescription{
-		Name:        "auto-milestone",
-		Description: "Attach merged pull requests to the upcoming milestone",
+		Name:        "version-milestone",
+		Description: "Attach merged pull requests to the upcoming version's milestone",
 	}
 }
 
-func (d *autoMilestoneDescriptor) OperationFromCli(*cli.Context) (operations.Operation, error) {
+func (d *versionMilestoneDescriptor) OperationFromCli(*cli.Context) (operations.Operation, error) {
 	return d.OperationFromConfig(nil)
 }
 
-func (d *autoMilestoneDescriptor) OperationFromConfig(operations.Configuration) (operations.Operation, error) {
-	return &autoMilestoneOperation{
+func (d *versionMilestoneDescriptor) OperationFromConfig(operations.Configuration) (operations.Operation, error) {
+	return &versionMilestoneOperation{
 		VersionGetter: getVersionFromRepository,
 	}, nil
 }
 
-type autoMilestoneOperation struct {
+type versionMilestoneOperation struct {
 	VersionGetter func(repository string) (string, error)
 }
 
-func (o *autoMilestoneOperation) Accepts() operations.AcceptedType {
+func (o *versionMilestoneOperation) Accepts() operations.AcceptedType {
 	return operations.PullRequests
 }
 
-func (o *autoMilestoneOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
+func (o *versionMilestoneOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
 	_, _, err := c.Client.Issues().Edit(c.Username, c.Repository, item.Number(), &github.IssueRequest{
 		Milestone: userData.(*github.Milestone).Number,
 	})
 	return err
 }
 
-func (o *autoMilestoneOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
+func (o *versionMilestoneOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
 	return fmt.Sprintf("adding pull reques to milestone %d (%q)", *userData.(*github.Milestone).Number, *userData.(*github.Milestone).Title)
 }
 
-func (o *autoMilestoneOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
+func (o *versionMilestoneOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
 	// We only consider merged pull requests against the master branch which don't already have a
 	// milestone set.
 	pr := item.PullRequest
@@ -104,13 +104,13 @@ func (o *autoMilestoneOperation) Filter(c *operations.Context, item gh.Item) (op
 	return operations.Accept, targetMilestone, nil
 }
 
-func (o *autoMilestoneOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {
-	// autoMilestoneOperation doesn't apply to GitHub issues.
+func (o *versionMilestoneOperation) IssueListOptions(c *operations.Context) *github.IssueListByRepoOptions {
+	// versionMilestoneOperation doesn't apply to GitHub issues.
 	return nil
 }
 
-func (o *autoMilestoneOperation) PullRequestListOptions(c *operations.Context) *github.PullRequestListOptions {
-	// autoMilestoneOperation is a dangerous one to run as batch, as it will take all previously
+func (o *versionMilestoneOperation) PullRequestListOptions(c *operations.Context) *github.PullRequestListOptions {
+	// versionMilestoneOperation is a dangerous one to run as batch, as it will take all previously
 	// merged pull requests and associate them with the next milestone. Timing matters for this
 	// operation, and that would be a mistake to do so. Returning nil here is our way to disable
 	// batch invokation for this operation.

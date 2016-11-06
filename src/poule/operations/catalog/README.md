@@ -1,24 +1,15 @@
 Poule operations
 ================
 
-| Operation        | Docker specific | Issues                  | Pull Requests           | Purpose                                                             |
-|------------------|:---------------:|:-----------------------:|:-----------------------:|---------------------------------------------------------------------|
-| `auto-milestone` | ~               |                         | :ballot_box_with_check: | Add merged pull requests to the upcoming milestone.                 |
-| `ci-label-clean` |                 |                         | :ballot_box_with_check: | Remove CI failures labels where necessary.                          |
-| `dco-check`      | :whale:         |                         | :ballot_box_with_check: | Check for commit signatures, label and post a comment if missing.   |
-| `label`          |                 | :ballot_box_with_check: | :ballot_box_with_check: | Auto-label issues and pull requests according on matching regexps.  |
-| `prune  `        |                 | :ballot_box_with_check: |                         | Manage issues with no activities.                                   |
-| `rebuild`        | :whale:         |                         | :ballot_box_with_check: | Rebuild all or selected pull request jobs.                          |
-| `version-label`  | :whale:         | :ballot_box_with_check: |                         | Add a `version/x` label based on Docker version string in the body. |
-
-## Auto milestone
-
-The `auto-milestone` operation adds merged pull requests to the currently active milestone: it uses
-a `VERSION` file at the root of the repository to determine the current version in the making and
-searches for a milestone which title matches that version string.
-
-The goal is for every merged pull request to be attached to a milestone, in such way that it's
-trivial to determine from GitHub in which release a given changeset was shipped.
+| Operation           | Docker specific | Issues                  | Pull Requests           | Purpose                                                             |
+|---------------------|:---------------:|:-----------------------:|:-----------------------:|---------------------------------------------------------------------|
+| `ci-label-clean`    |                 |                         | :ballot_box_with_check: | Remove CI failures labels where necessary.                          |
+| `dco-check`         | :whale:         |                         | :ballot_box_with_check: | Check for commit signatures, label and post a comment if missing.   |
+| `label`             |                 | :ballot_box_with_check: | :ballot_box_with_check: | Auto-label issues and pull requests according on matching regexps.  |
+| `prune  `           |                 | :ballot_box_with_check: |                         | Manage issues with no activities.                                   |
+| `rebuild`           | :whale:         |                         | :ballot_box_with_check: | Rebuild all or selected pull request jobs.                          |
+| `version-label`     | :whale:         | :ballot_box_with_check: |                         | Add a `version/x` label based on Docker version string in the body. |
+| `version-milestone` | ~               |                         | :ballot_box_with_check: | Add merged pull requests to the upcoming milestone.                 |
 
 ## CI label cleaning
 
@@ -84,3 +75,13 @@ settings: {
 ```
 
 ## Version label
+
+## Version milestone
+
+The `version-milestone` operation adds merged pull requests to the currently active milestone: it uses
+a `VERSION` file at the root of the repository to determine the current version in the making and
+searches for a milestone which title matches that version string.
+
+The goal is for every merged pull request to be attached to a milestone, in such way that it's
+trivial to determine from GitHub in which release a given changeset was shipped.
+

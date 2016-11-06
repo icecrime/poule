@@ -13,7 +13,7 @@ import (
 
 func TestAutoMilestone(t *testing.T) {
 	clt, ctx := makeContext()
-	operation := &autoMilestoneOperation{
+	operation := &versionMilestoneOperation{
 		VersionGetter: func(repository string) (string, error) {
 			return "test-version", nil
 		},
