@@ -2,15 +2,14 @@ package server
 
 import (
 	"encoding/json"
+
 	"poule/configuration"
 	"poule/gh"
-	"poule/operations"
-	"poule/operations/catalog"
+	"poule/runner"
 
 	"github.com/Sirupsen/logrus"
 	nsq "github.com/bitly/go-nsq"
 	"github.com/google/go-github/github"
-	"github.com/pkg/errors"
 )
 
 type PartialMessage struct {
@@ -42,6 +41,7 @@ func (s *Server) HandleMessage(message *nsq.Message) error {
 		logrus.WithFields(logrus.Fields{
 			"action":     m.Action,
 			"event":      m.GitHubEvent,
+			"number":     item.Number(),
 			"repository": item.Repository(),
 		}).Debugf("received GitHub event")
 	}
@@ -67,29 +67,20 @@ outer_loop:
 }
 
 func (s *Server) executeAction(action configuration.Action, item gh.Item) error {
-	// Apply all operations on the associated repository for that item.
 	for _, operationConfig := range action.Operations {
-		descriptor, ok := catalog.ByNameIndex[operationConfig.Type]
-		if !ok {
-			return errors.Errorf("unknown operation %q", operationConfig.Type)
-		}
-		op, err := descriptor.OperationFromConfig(operationConfig.Settings)
-		if err != nil {
-			return err
-		}
-
 		logrus.WithFields(logrus.Fields{
 			"operation":  operationConfig.Type,
 			"repository": item.Repository(),
 		}).Info("running operation")
 
-		if err := operations.RunSingle(&configuration.Config{
+		config := &configuration.Config{
 			RunDelay:   s.config.RunDelay,
 			DryRun:     s.config.DryRun,
 			Token:      s.config.Token,
 			TokenFile:  s.config.TokenFile,
 			Repository: item.Repository(),
-		}, op, item); err != nil {
+		}
+		if err := runner.RunSingleFromConfiguration(config, operationConfig, item); err != nil {
 			return err
 		}
 	}

@@ -1,4 +1,4 @@
-package operations
+package runner
 
 import (
 	"fmt"
@@ -6,7 +6,9 @@ import (
 
 	"poule/configuration"
 	"poule/gh"
-	"poule/operations/catalog/settings"
+	"poule/operations"
+	"poule/operations/catalog"
+	"poule/operations/settings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
@@ -14,12 +16,12 @@ import (
 )
 
 type Runner interface {
-	ListItems(context *Context, op Operation, page int) ([]gh.Item, *github.Response, error)
+	ListItems(context *operations.Context, op operations.Operation, page int) ([]gh.Item, *github.Response, error)
 }
 
 type IssueRunner struct{}
 
-func (r *IssueRunner) ListItems(context *Context, op Operation, page int) ([]gh.Item, *github.Response, error) {
+func (r *IssueRunner) ListItems(context *operations.Context, op operations.Operation, page int) ([]gh.Item, *github.Response, error) {
 	// Retrieve the list options from the operation, and override the page
 	// number with the current pointer.
 	listOptions := op.IssueListOptions(context)
@@ -44,7 +46,7 @@ func (r *IssueRunner) ListItems(context *Context, op Operation, page int) ([]gh.
 
 type PullRequestRunner struct{}
 
-func (r *PullRequestRunner) ListItems(context *Context, op Operation, page int) ([]gh.Item, *github.Response, error) {
+func (r *PullRequestRunner) ListItems(context *operations.Context, op operations.Operation, page int) ([]gh.Item, *github.Response, error) {
 	// Retrieve the list options from the operation, and override the page
 	// number with the current pointer.
 	listOptions := op.PullRequestListOptions(context)
@@ -67,8 +69,8 @@ func (r *PullRequestRunner) ListItems(context *Context, op Operation, page int) 
 	return items, resp, err
 }
 
-func Run(c *configuration.Config, op Operation, runner Runner, filters []*settings.Filter) error {
-	context := Context{}
+func RunOnEveryItem(c *configuration.Config, op operations.Operation, runner Runner, filters settings.Filters) error {
+	context := operations.Context{}
 	context.Client = gh.MakeClient(c)
 	context.Username, context.Repository = c.SplitRepository()
 
@@ -80,14 +82,7 @@ func Run(c *configuration.Config, op Operation, runner Runner, filters []*settin
 
 		// Handle each issue, filtering them using the operation first.
 		for _, item := range items {
-			// Apply global filters to the item.
-			for _, filter := range filters {
-				if filter.Apply(item) == false {
-					continue
-				}
-			}
-
-			if err := RunSingle(c, op, item); err != nil {
+			if err := RunSingle(c, op, item, filters); err != nil {
 				return err
 			}
 		}
@@ -102,10 +97,15 @@ func Run(c *configuration.Config, op Operation, runner Runner, filters []*settin
 	return nil
 }
 
-func RunSingle(c *configuration.Config, op Operation, item gh.Item) error {
-	context := Context{}
+func RunSingle(c *configuration.Config, op operations.Operation, item gh.Item, filters settings.Filters) error {
+	context := operations.Context{}
 	context.Client = gh.MakeClient(c)
 	context.Username, context.Repository = c.SplitRepository()
+
+	// Apply global filters to the item.
+	if !filters.Apply(item) {
+		return nil
+	}
 
 	// Apply operation-specific filtering.
 	filterResult, userdata, err := op.Filter(&context, item)
@@ -116,7 +116,7 @@ func RunSingle(c *configuration.Config, op Operation, item gh.Item) error {
 	// Proceed with operation application depending on the result of
 	// the filtering.
 	switch filterResult {
-	case Accept:
+	case operations.Accept:
 		if s := op.Describe(&context, item, userdata); s != "" {
 			logrus.WithFields(logrus.Fields{
 				"dry_run":    c.DryRun,
@@ -131,9 +131,31 @@ func RunSingle(c *configuration.Config, op Operation, item gh.Item) error {
 			}
 		}
 		break
-	case Terminal:
+	case operations.Terminal:
 		return nil
 	}
 
 	return nil
+}
+
+func RunSingleFromConfiguration(c *configuration.Config, operationConfig configuration.OperationConfiguration, item gh.Item) error {
+	// Run the filters first: there's no need to go further if the filters are rejecting the item
+	// anyway.
+	if itemFilters, err := settings.ParseConfigurationFilters(operationConfig.Filters); err != nil {
+		return err
+	} else if !itemFilters.Apply(item) {
+		return nil
+	}
+
+	// Create and execute the operation. Note that we pass an empty set of filters, as we have
+	// already run them before.
+	descriptor, ok := catalog.ByNameIndex[operationConfig.Type]
+	if !ok {
+		return errors.Errorf("unknown operation %q", operationConfig.Type)
+	}
+	op, err := descriptor.OperationFromConfig(operationConfig.Settings)
+	if err != nil {
+		return err
+	}
+	return RunSingle(c, op, item, settings.Filters{})
 }

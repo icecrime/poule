@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"poule/operations/catalog"
-	"poule/operations/catalog/settings"
+	"poule/operations/settings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/urfave/cli"
