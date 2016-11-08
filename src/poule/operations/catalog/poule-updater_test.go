@@ -36,10 +36,10 @@ func TestPouleUpdater(t *testing.T) {
 	// Set up the mock objects.
 	commitFiles := []*github.CommitFile{
 		&github.CommitFile{
-			Filename: test.MakeString("Dockerfile"),
+			Filename: github.String("Dockerfile"),
 		},
 		&github.CommitFile{
-			Filename: test.MakeString(configuration.PouleConfigurationFile),
+			Filename: github.String(configuration.PouleConfigurationFile),
 		},
 	}
 	clt.MockPullRequests.

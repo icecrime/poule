@@ -43,5 +43,6 @@ type PullRequestsService interface {
 //go:generate mockery -name=RepositoriesService -output ../test/mocks
 type RepositoriesService interface {
 	// Statuses API.
+	CreateStatus(owner, repo, ref string, sts *github.RepoStatus) (*github.RepoStatus, *github.Response, error)
 	ListStatuses(owner, repo, ref string, opt *github.ListOptions) ([]*github.RepoStatus, *github.Response, error)
 }

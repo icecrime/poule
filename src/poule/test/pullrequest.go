@@ -10,7 +10,7 @@ import (
 func NewPullRequestBuilder(number int) *PullRequestBuilder {
 	return &PullRequestBuilder{
 		Value: &github.PullRequest{
-			Number: MakeInt(number),
+			Number: github.Int(number),
 		},
 	}
 }
@@ -25,61 +25,61 @@ func (p *PullRequestBuilder) Item() gh.Item {
 
 func (p *PullRequestBuilder) BaseBranch(username, repository, ref string, SHA string) *PullRequestBuilder {
 	p.Value.Base = &github.PullRequestBranch{
-		Ref: MakeString(ref),
+		Ref: github.String(ref),
 		Repo: &github.Repository{
-			FullName: MakeString(username + "/" + repository),
-			Name:     MakeString(repository),
+			FullName: github.String(username + "/" + repository),
+			Name:     github.String(repository),
 			Owner: &github.User{
-				Login: MakeString(username),
+				Login: github.String(username),
 			},
 		},
-		SHA: MakeString(SHA),
+		SHA: github.String(SHA),
 	}
 	return p
 }
 
 func (p *PullRequestBuilder) Body(body string) *PullRequestBuilder {
-	p.Value.Body = MakeString(body)
+	p.Value.Body = github.String(body)
 	return p
 }
 
 func (p *PullRequestBuilder) Commits(commits int) *PullRequestBuilder {
-	p.Value.Commits = MakeInt(commits)
+	p.Value.Commits = github.Int(commits)
 	return p
 }
 
 func (p *PullRequestBuilder) HeadBranch(username, repository, ref string, SHA string) *PullRequestBuilder {
 	p.Value.Head = &github.PullRequestBranch{
-		Ref: MakeString(ref),
+		Ref: github.String(ref),
 		Repo: &github.Repository{
-			FullName: MakeString(username + "/" + repository),
-			Name:     MakeString(repository),
+			FullName: github.String(username + "/" + repository),
+			Name:     github.String(repository),
 			Owner: &github.User{
-				Login: MakeString(username),
+				Login: github.String(username),
 			},
-			SSHURL: MakeString(fmt.Sprintf("ssh@%s", repository)),
+			SSHURL: github.String(fmt.Sprintf("ssh@%s", repository)),
 		},
-		SHA: MakeString(SHA),
+		SHA: github.String(SHA),
 	}
 	return p
 }
 
 func (p *PullRequestBuilder) Merged(merged bool) *PullRequestBuilder {
-	p.Value.Merged = MakeBool(merged)
+	p.Value.Merged = github.Bool(merged)
 	return p
 }
 
 func (p *PullRequestBuilder) Number(number int) *PullRequestBuilder {
-	p.Value.Number = MakeInt(number)
+	p.Value.Number = github.Int(number)
 	return p
 }
 
 func (p *PullRequestBuilder) State(state string) *PullRequestBuilder {
-	p.Value.State = MakeString(state)
+	p.Value.State = github.String(state)
 	return p
 }
 
 func (p *PullRequestBuilder) Title(title string) *PullRequestBuilder {
-	p.Value.Title = MakeString(title)
+	p.Value.Title = github.String(title)
 	return p
 }
