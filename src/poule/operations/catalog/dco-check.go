@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -219,7 +220,11 @@ func toggleDCOLabel(c *operations.Context, pr *github.PullRequest, enable bool, 
 		}
 	} else {
 		// Remove unsigned label from issue.
-		if _, err := c.Client.Issues().RemoveLabelForIssue(c.Username, c.Repository, *pr.Number, label); err != nil {
+		if resp, err := c.Client.Issues().RemoveLabelForIssue(c.Username, c.Repository, *pr.Number, label); err != nil {
+			// Ignore 404 errors.
+			if resp.StatusCode == http.StatusNotFound {
+				return nil
+			}
 			return err
 		}
 	}

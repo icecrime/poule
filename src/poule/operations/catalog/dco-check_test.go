@@ -1,7 +1,9 @@
 package catalog
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -138,6 +140,41 @@ func TestDCOSuccess(t *testing.T) {
 	clt.MockIssues.
 		On("DeleteComment", ctx.Username, ctx.Repository, test.CommentID).
 		Return(nil, nil)
+
+	dcoTestStub(t, ctx, item)
+}
+
+func TestDCOSuccessLabelMissing(t *testing.T) {
+	clt, ctx := makeContext()
+	item := test.NewPullRequestBuilder(test.IssueNumber).
+		Title("This is the title of a pull request").
+		Body("Lorem ipsum dolor sit amet, consectetur adipiscing elit").
+		BaseBranch(ctx.Username, ctx.Repository, "base", "0x123").
+		HeadBranch(ctx.Username, ctx.Repository, "head", "0x456").
+		Commits(1).
+		Item()
+
+	// Set up the mock objects.
+	clt.MockIssues.
+		On("RemoveLabelForIssue", ctx.Username, ctx.Repository, test.IssueNumber, testDCOFailureLabel).
+		Return(&github.Response{
+			Response: &http.Response{
+				StatusCode: http.StatusNotFound,
+			},
+		}, errors.New("non-nil error"))
+
+	clt.MockPullRequests.
+		On("ListCommits", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.ListOptions")).
+		Return([]*github.RepositoryCommit{
+			&github.RepositoryCommit{
+				SHA:     test.MakeString(test.CommitSHA[0]),
+				Message: test.MakeString("This is signed.\nSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
+			},
+		}, nil, nil)
+
+	clt.MockIssues.
+		On("ListComments", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.IssueListCommentsOptions")).
+		Return([]*github.IssueComment{}, nil, nil)
 
 	dcoTestStub(t, ctx, item)
 }
