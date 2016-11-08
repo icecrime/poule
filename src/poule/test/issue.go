@@ -9,7 +9,7 @@ import (
 func NewIssueBuilder(number int) *IssueBuilder {
 	return &IssueBuilder{
 		Value: &github.Issue{
-			Number: MakeInt(number),
+			Number: github.Int(number),
 		},
 	}
 }
@@ -23,7 +23,7 @@ func (p *IssueBuilder) Item() gh.Item {
 }
 
 func (p *IssueBuilder) Body(body string) *IssueBuilder {
-	p.Value.Body = MakeString(body)
+	p.Value.Body = github.String(body)
 	return p
 }
 
@@ -35,6 +35,6 @@ func (p *IssueBuilder) Labels(names []string) *IssueBuilder {
 }
 
 func (p *IssueBuilder) Number(number int) *IssueBuilder {
-	p.Value.Number = MakeInt(number)
+	p.Value.Number = github.Int(number)
 	return p
 }

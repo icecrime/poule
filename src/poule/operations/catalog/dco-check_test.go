@@ -58,14 +58,14 @@ func TestDCOFailure(t *testing.T) {
 		Return([]*github.RepositoryCommit{
 			&github.RepositoryCommit{
 				Commit: &github.Commit{
-					SHA:     test.MakeString(test.CommitSHA[0]),
-					Message: test.MakeString("Commit message"),
+					SHA:     github.String(test.CommitSHA[0]),
+					Message: github.String("Commit message"),
 				},
 			},
 			&github.RepositoryCommit{
 				Commit: &github.Commit{
-					SHA:     test.MakeString(test.CommitSHA[1]),
-					Message: test.MakeString("Signed-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
+					SHA:     github.String(test.CommitSHA[1]),
+					Message: github.String("Signed-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
 				},
 			},
 		}, nil, nil)
@@ -77,6 +77,18 @@ func TestDCOFailure(t *testing.T) {
 	clt.MockIssues.
 		On("CreateComment", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.IssueComment")).
 		Return(&github.IssueComment{}, nil, nil)
+
+	clt.MockRepositories.
+		On("CreateStatus", ctx.Username, ctx.Repository, "0x456", mock.AnythingOfType("*github.RepoStatus")).
+		Run(func(args mock.Arguments) {
+			arg := args.Get(3).(*github.RepoStatus)
+			if expected := "failure"; arg.State == nil {
+				t.Fatalf("Expected repoStatus to be %q, got <nil>", expected)
+			} else if *arg.State != expected {
+				t.Fatalf("Expected repoStatus to be %q, got %q", expected, *arg.State)
+			}
+		}).
+		Return(nil, nil, nil)
 
 	dcoTestStub(t, ctx, item)
 
@@ -111,12 +123,12 @@ func TestDCOSuccess(t *testing.T) {
 		On("ListCommits", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.ListOptions")).
 		Return([]*github.RepositoryCommit{
 			&github.RepositoryCommit{
-				SHA:     test.MakeString(test.CommitSHA[0]),
-				Message: test.MakeString("This is signed.\nSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
+				SHA:     github.String(test.CommitSHA[0]),
+				Message: github.String("This is signed.\nSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
 			},
 			&github.RepositoryCommit{
-				SHA:     test.MakeString(test.CommitSHA[1]),
-				Message: test.MakeString("This too.\n\tSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>  \nYep.\n"),
+				SHA:     github.String(test.CommitSHA[1]),
+				Message: github.String("This too.\n\tSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>  \nYep.\n"),
 			},
 		}, nil, nil)
 
@@ -124,22 +136,34 @@ func TestDCOSuccess(t *testing.T) {
 		On("ListComments", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.IssueListCommentsOptions")).
 		Return([]*github.IssueComment{
 			&github.IssueComment{
-				ID:   test.MakeInt(test.CommentID),
-				Body: test.MakeString(fmt.Sprintf("%s\nPlease sign your commit!", dcoCommentToken)),
+				ID:   github.Int(test.CommentID),
+				Body: github.String(fmt.Sprintf("%s\nPlease sign your commit!", dcoCommentToken)),
 			},
 			&github.IssueComment{
-				ID:   test.MakeInt(test.CommentID + 1),
-				Body: test.MakeString("Merge it!"),
+				ID:   github.Int(test.CommentID + 1),
+				Body: github.String("Merge it!"),
 			},
 			&github.IssueComment{
-				ID:   test.MakeInt(test.CommentID + 2),
-				Body: test.MakeString("Unrelated comment."),
+				ID:   github.Int(test.CommentID + 2),
+				Body: github.String("Unrelated comment."),
 			},
 		}, nil, nil)
 
 	clt.MockIssues.
 		On("DeleteComment", ctx.Username, ctx.Repository, test.CommentID).
 		Return(nil, nil)
+
+	clt.MockRepositories.
+		On("CreateStatus", ctx.Username, ctx.Repository, "0x456", mock.AnythingOfType("*github.RepoStatus")).
+		Run(func(args mock.Arguments) {
+			arg := args.Get(3).(*github.RepoStatus)
+			if expected := "success"; arg.State == nil {
+				t.Fatalf("Expected repoStatus to be %q, got <nil>", expected)
+			} else if *arg.State != expected {
+				t.Fatalf("Expected repoStatus to be %q, got %q", expected, *arg.State)
+			}
+		}).
+		Return(nil, nil, nil)
 
 	dcoTestStub(t, ctx, item)
 }
@@ -167,14 +191,18 @@ func TestDCOSuccessLabelMissing(t *testing.T) {
 		On("ListCommits", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.ListOptions")).
 		Return([]*github.RepositoryCommit{
 			&github.RepositoryCommit{
-				SHA:     test.MakeString(test.CommitSHA[0]),
-				Message: test.MakeString("This is signed.\nSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
+				SHA:     github.String(test.CommitSHA[0]),
+				Message: github.String("This is signed.\nSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
 			},
 		}, nil, nil)
 
 	clt.MockIssues.
 		On("ListComments", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.IssueListCommentsOptions")).
 		Return([]*github.IssueComment{}, nil, nil)
+
+	clt.MockRepositories.
+		On("CreateStatus", ctx.Username, ctx.Repository, "0x456", mock.AnythingOfType("*github.RepoStatus")).
+		Return(nil, nil, nil)
 
 	dcoTestStub(t, ctx, item)
 }

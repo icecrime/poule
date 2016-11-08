@@ -34,7 +34,7 @@ func TestVersionLabel(t *testing.T) {
 		issue := test.NewIssueBuilder(test.IssueNumber).Body(body).Item()
 		clt.MockIssues.
 			On("AddLabelsToIssue", ctx.Username, ctx.Repository, test.IssueNumber, []string{expected}).
-			Return([]*github.Label{&github.Label{Name: test.MakeString(expected)}}, nil, nil)
+			Return([]*github.Label{&github.Label{Name: github.String(expected)}}, nil, nil)
 
 		res, userData, err := operation.Filter(ctx, issue)
 		if err != nil {

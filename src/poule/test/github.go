@@ -28,7 +28,7 @@ func (t *TestClient) Repositories() gh.RepositoriesService {
 
 func MakeLabel(name string) github.Label {
 	return github.Label{
-		Name: MakeString(name),
+		Name: github.String(name),
 	}
 }
 

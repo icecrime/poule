@@ -16,8 +16,11 @@ import (
 )
 
 var (
-	dcoRegex             = regexp.MustCompile("(?m)(Docker-DCO-1.1-)?Signed-off-by: ([^<]+) <([^<>@]+@[^<>]+)>( \\(github: ([a-zA-Z0-9][a-zA-Z0-9-]+)\\))?")
-	dcoCommentToken      = "AUTOMATED:POULE:DCO-EXPLANATION"
+	dcoContext      = "dco-signed"
+	dcoCommentToken = "AUTOMATED:POULE:DCO-EXPLANATION"
+	dcoRegex        = regexp.MustCompile("(?m)(Docker-DCO-1.1-)?Signed-off-by: ([^<]+) <([^<>@]+@[^<>]+)>( \\(github: ([a-zA-Z0-9][a-zA-Z0-9-]+)\\))?")
+	dcoURL          = "https://github.com/docker/docker/blob/master/CONTRIBUTING.md#sign-your-work"
+
 	defaultUnsignedLabel = "dco/no"
 )
 
@@ -92,7 +95,14 @@ func (o *dcoCheckOperation) applySigned(c *operations.Context, pr *github.PullRe
 			return err
 		}
 	}
-	return nil
+
+	// Set the status as successful.
+	_, _, err = c.Client.Repositories().CreateStatus(c.Username, c.Repository, *pr.Head.SHA, &github.RepoStatus{
+		Context:     github.String(dcoContext),
+		Description: github.String("All commits are signed"),
+		State:       github.String("success"),
+	})
+	return err
 }
 
 func (o *dcoCheckOperation) applyUnsigned(c *operations.Context, pr *github.PullRequest) error {
@@ -111,10 +121,18 @@ func (o *dcoCheckOperation) applyUnsigned(c *operations.Context, pr *github.Pull
 
 	// Create the automated comment.
 	content := formatDCOComment(c, pr)
-	comment := &github.IssueComment{
-		Body: &content,
+	comment := &github.IssueComment{Body: &content}
+	if _, _, err := c.Client.Issues().CreateComment(c.Username, c.Repository, *pr.Number, comment); err != nil {
+		return err
 	}
-	_, _, err := c.Client.Issues().CreateComment(c.Username, c.Repository, *pr.Number, comment)
+
+	// Set the status as failing.
+	_, _, err := c.Client.Repositories().CreateStatus(c.Username, c.Repository, *pr.Head.SHA, &github.RepoStatus{
+		Context:     github.String(dcoContext),
+		Description: github.String("Some commits don't have signature"),
+		State:       github.String("failure"),
+		TargetURL:   github.String(dcoURL),
+	})
 	return err
 }
 

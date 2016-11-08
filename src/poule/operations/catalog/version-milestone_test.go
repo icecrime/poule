@@ -28,19 +28,19 @@ func TestAutoMilestone(t *testing.T) {
 	// Mock the milestones API.
 	milestones := []*github.Milestone{
 		&github.Milestone{
-			Number: test.MakeInt(1),
-			Title:  test.MakeString("old-version"),
-			State:  test.MakeString("closed"),
+			Number: github.Int(1),
+			Title:  github.String("old-version"),
+			State:  github.String("closed"),
 		},
 		&github.Milestone{
-			Number: test.MakeInt(2),
-			Title:  test.MakeString("other-version"),
-			State:  test.MakeString("open"),
+			Number: github.Int(2),
+			Title:  github.String("other-version"),
+			State:  github.String("open"),
 		},
 		&github.Milestone{
-			Number: test.MakeInt(3),
-			Title:  test.MakeString("test-version"),
-			State:  test.MakeString("open"),
+			Number: github.Int(3),
+			Title:  github.String("test-version"),
+			State:  github.String("open"),
 		},
 	}
 	clt.MockIssues.On("ListMilestones", ctx.Username, ctx.Repository, mock.AnythingOfType("*github.MilestoneListOptions")).
