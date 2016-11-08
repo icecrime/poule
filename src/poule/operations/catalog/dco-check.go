@@ -47,13 +47,14 @@ func (d *dcoCheckDescriptor) OperationFromCli(c *cli.Context) (operations.Operat
 }
 
 func (d *dcoCheckDescriptor) OperationFromConfig(c operations.Configuration) (operations.Operation, error) {
-	dcoCheckOperation := &dcoCheckOperation{
-		UnsignedLabel: defaultUnsignedLabel,
-	}
+	dcoCheckOperation := &dcoCheckOperation{}
 	if len(c) > 0 {
 		if err := mapstructure.Decode(c, &dcoCheckOperation); err != nil {
 			return nil, errors.Wrap(err, "decoding configuration")
 		}
+	}
+	if dcoCheckOperation.UnsignedLabel == "" {
+		dcoCheckOperation.UnsignedLabel = defaultUnsignedLabel
 	}
 	return dcoCheckOperation, nil
 }

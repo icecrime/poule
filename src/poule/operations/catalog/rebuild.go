@@ -60,13 +60,12 @@ func (d *prRebuildDescriptor) OperationFromCli(c *cli.Context) (operations.Opera
 }
 
 func (d *prRebuildDescriptor) OperationFromConfig(c operations.Configuration) (operations.Operation, error) {
-	operation := &prRebuildOperation{
-		Builder: rebuildPR,
-	}
+	operation := &prRebuildOperation{}
 	if err := mapstructure.Decode(c, &operation); err != nil {
 		return nil, errors.Wrap(err, "decoding configuration")
 	}
 	// Set the default value for statuses.
+	operation.Builder = rebuildPR
 	if len(operation.Statuses) == 0 {
 		operation.Statuses = defaultStatuses
 	}
