@@ -11,4 +11,7 @@ const (
 	// PouleToken is injected as an HTML comment in the body of all messages
 	// posted by the tool itself.
 	PouleToken = "AUTOMATED:POULE"
+
+	// PouleConfigurationFile is the name of the special file at the root of the repository.
+	PouleConfigurationFile = "poule.yml"
 )

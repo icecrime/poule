@@ -28,20 +28,36 @@ func (s *Server) HandleMessage(message *nsq.Message) error {
 		return err
 	}
 
+	// Parse into a GitHub in order to extract the repository information.
+	item, err := makeGitHubItem(m.GitHubEvent, message.Body)
+	switch {
+	case err != nil:
+		return err
+	case item == nil:
+		return nil
+	}
+
 	// Avoid logging status event which are just too frequent and noisy.
 	if m.GitHubEvent != "status" {
 		logrus.WithFields(logrus.Fields{
-			"action": m.Action,
-			"event":  m.GitHubEvent,
+			"action":     m.Action,
+			"event":      m.GitHubEvent,
+			"repository": item.Repository(),
 		}).Debugf("received GitHub event")
+	}
+
+	// Gather the list of potential actions for that repository.
+	actions := s.config.CommonActions
+	if repoConfig, ok := s.repositoriesConfig[item.Repository()]; ok {
+		actions = append(actions, repoConfig...)
 	}
 
 	// Go through the configurations that match this (event, action) couple. In the `Triggers` map,
 	// keys are GitHub event types, and values are associated actions.
 outer_loop:
-	for _, actionConfig := range s.config.Actions {
+	for _, actionConfig := range actions {
 		if actionConfig.Triggers.Contains(m.GitHubEvent, m.Action) {
-			if err := s.dispatchEvent(m.GitHubEvent, message.Body, actionConfig); err != nil {
+			if err := s.executeAction(actionConfig, *item); err != nil {
 				return err
 			}
 			continue outer_loop
@@ -50,26 +66,7 @@ outer_loop:
 	return nil
 }
 
-func (s *Server) dispatchEvent(event string, data []byte, action configuration.Action) error {
-	item, err := makeGitHubItem(event, data)
-	switch {
-	case err != nil:
-		return err
-	case item == nil:
-		return nil
-	default:
-		return s.executeAction(action, *item)
-	}
-}
-
 func (s *Server) executeAction(action configuration.Action, item gh.Item) error {
-	// Skip the execution if the action isn't configured for that repository.
-	repo := item.Repository()
-	if !action.Repositories.Contains(repo) {
-		logrus.Debugf("filtering event for repository=%s", repo)
-		return nil
-	}
-
 	// Apply all operations on the associated repository for that item.
 	for _, operationConfig := range action.Operations {
 		descriptor, ok := catalog.ByNameIndex[operationConfig.Type]
@@ -83,7 +80,7 @@ func (s *Server) executeAction(action configuration.Action, item gh.Item) error 
 
 		logrus.WithFields(logrus.Fields{
 			"operation":  operationConfig.Type,
-			"repository": repo,
+			"repository": item.Repository(),
 		}).Info("running operation")
 
 		if err := operations.RunSingle(&configuration.Config{
@@ -91,7 +88,7 @@ func (s *Server) executeAction(action configuration.Action, item gh.Item) error 
 			DryRun:     s.config.DryRun,
 			Token:      s.config.Token,
 			TokenFile:  s.config.TokenFile,
-			Repository: repo,
+			Repository: item.Repository(),
 		}, op, item); err != nil {
 			return err
 		}

@@ -2,24 +2,21 @@ package configuration
 
 // Server is the configuration object for the server mode.
 type Server struct {
-	Config    `yaml:",inline"`
-	NSQConfig `yaml:",inline"`
-	Actions   []Action `yaml:"configuration"`
+	Config      `yaml:",inline"`
+	LookupdAddr string `yaml:"nsq_lookupd"`
+	Channel     string `yaml:"nsq_channel"`
+
+	// Repositories maps GitHub repositories full names their corresponding
+	// NSQ topic.
+	Repositories map[string]string `yaml:"repositories"`
+
+	// CommonActions defines the triggers and operations which apply to every configured repository.
+	CommonActions []Action `yaml:"common_configuration"`
 }
 
-type NSQConfig struct {
-	LookupdAddr string   `yaml:"nsq_lookupd"`
-	Channel     string   `yaml:"nsq_channel"`
-	Topics      []string `yaml:"nsq_topics"`
-}
-
-// Action is the definition of an action: it descrbibes operations to apply on a set of
-// repositories when any of the associated triggers are met.
+// Action is the definition of an action: it descrbibes operations to apply when any of the
+// associated triggers are met.
 type Action struct {
-	// Repositories is the list of repositories full names (e.g., "docker/dokcer") that the action
-	// applies to.
-	Repositories StringSlice `yaml:"repositories"`
-
 	// Triggers is the collection of GitHub events that should trigger the action. The keys must be
 	// valid GitHub event types (e.g., "pull_request"), and the value must be a list of alid values
 	// for the action field of the GitHub paylost (e.g., "created").

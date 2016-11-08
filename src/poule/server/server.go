@@ -1,31 +1,48 @@
 package server
 
 import (
+	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 
 	"poule/configuration"
+	"poule/operations/catalog"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/bitly/go-nsq"
+	"github.com/pkg/errors"
+	yaml "gopkg.in/yaml.v2"
+)
+
+const (
+	GitHubRawURLPrefix = "https://raw.githubusercontent.com"
 )
 
 type Server struct {
-	config *configuration.Server
+	config             *configuration.Server
+	repositoriesConfig map[string][]configuration.Action
 }
 
-func NewServer(cfg *configuration.Server) (*Server, error) {
-	return &Server{
-		config: cfg,
-	}, nil
+func NewServer(config *configuration.Server) (*Server, error) {
+	server := &Server{
+		config:             config,
+		repositoriesConfig: make(map[string][]configuration.Action),
+	}
+
+	// We initialize the special poule-updater operation which need to be given a callback into the
+	// core behavior of the tool
+	catalog.PouleUpdateCallback = server.updateRepositoryConfiguration
+	return server, nil
 }
 
 func (s *Server) Run() error {
 	// Create and start monitoring queues.
-	queues := createQueues(&s.config.NSQConfig, s)
+	queues := createQueues(s.config, s)
 	stopChan := monitorQueues(queues)
 
 	// Graceful stop on SIGTERM and SIGINT.
@@ -44,7 +61,16 @@ func (s *Server) Run() error {
 			}
 		}
 	}
+	return nil
+}
 
+func (s *Server) FetchRepositoriesConfigs() error {
+	for repository, _ := range s.config.Repositories {
+		if err := s.updateRepositoryConfiguration(repository); err != nil {
+			logrus.Warnf(err.Error())
+			continue
+		}
+	}
 	return nil
 }
 
@@ -68,10 +94,10 @@ func NewQueue(topic, channel, lookupd string, handler nsq.Handler) (*Queue, erro
 	return &Queue{Consumer: consumer}, nil
 }
 
-func createQueues(c *configuration.NSQConfig, handler nsq.Handler) []*Queue {
+func createQueues(c *configuration.Server, handler nsq.Handler) []*Queue {
 	// Subscribe to the message queues for each repository.
-	queues := make([]*Queue, 0, len(c.Topics))
-	for _, topic := range c.Topics {
+	queues := make([]*Queue, 0, len(c.Repositories))
+	for _, topic := range c.Repositories {
 		queue, err := NewQueue(topic, c.Channel, c.LookupdAddr, handler)
 		if err != nil {
 			logrus.Fatal(err)
@@ -100,4 +126,42 @@ func monitorQueues(queues []*Queue) <-chan struct{} {
 		stopChan <- struct{}{}
 	}()
 	return stopChan
+}
+
+func (s *Server) updateRepositoryConfiguration(repository string) error {
+	// Fetch a repository specific configuration from GitHub.
+	repoConfigFile, err := pouleConfigurationFromGitHub(repository)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get configuration for repository %q", repository)
+	}
+
+	// Read the YAML configuration file identified by the argument.
+	if len(repoConfigFile) != 0 {
+		var repoConfig []configuration.Action
+		if err := yaml.Unmarshal([]byte(repoConfigFile), &repoConfig); err != nil {
+			return fmt.Errorf("failed to read configuration file for repository %q: %v", repository, err)
+		}
+
+		// Store the repository specific configuration.
+		s.repositoriesConfig[repository] = repoConfig
+		logrus.Infof("updated configuration for repository %q from GitHub", repository)
+	}
+	return nil
+}
+
+func pouleConfigurationFromGitHub(repository string) ([]byte, error) {
+	// Fetch a repository specific configuration from GitHub.
+	configURL := fmt.Sprintf("%s/%s/master/%s", GitHubRawURLPrefix, repository, configuration.PouleConfigurationFile)
+	resp, err := http.Get(configURL)
+	if err != nil {
+		return []byte{}, err
+	}
+	defer resp.Body.Close()
+
+	// If the file is not found, this is not an error.
+	if resp.StatusCode == http.StatusNotFound {
+		logrus.Debugf("configuration file missing for repository %q", repository)
+		return []byte{}, nil
+	}
+	return ioutil.ReadAll(resp.Body)
 }
