@@ -8,7 +8,7 @@ import (
 
 	"poule/gh"
 	"poule/operations"
-	"poule/operations/catalog/settings"
+	"poule/operations/settings"
 
 	"github.com/google/go-github/github"
 	"github.com/mitchellh/mapstructure"

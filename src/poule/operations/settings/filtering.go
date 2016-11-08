@@ -32,8 +32,8 @@ func ParseCliFilters(c *cli.Context) ([]*Filter, error) {
 
 // ParseConfigurationFilters reads filter definitions from the serialized
 // configuration format.
-func ParseConfigurationFilters(values map[string]interface{}) ([]*Filter, error) {
-	filters := []*Filter{}
+func ParseConfigurationFilters(values map[string]interface{}) (Filters, error) {
+	filters := Filters{}
 	for filterType, rawValue := range values {
 		value, err := filterValue(rawValue)
 		if err != nil {
@@ -46,6 +46,19 @@ func ParseConfigurationFilters(values map[string]interface{}) ([]*Filter, error)
 		filters = append(filters, filter)
 	}
 	return filters, nil
+}
+
+// Filters is a collection of Filter instances.
+type Filters []*Filter
+
+// Apply returns true only if all filters accept the item.
+func (f Filters) Apply(item gh.Item) bool {
+	for _, filter := range f {
+		if !filter.Apply(item) {
+			return false
+		}
+	}
+	return true
 }
 
 // Filter accepts or rejects a GitHub item based on a strategy.

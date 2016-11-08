@@ -4,7 +4,8 @@ import (
 	"poule/configuration"
 	"poule/operations"
 	"poule/operations/catalog"
-	"poule/operations/catalog/settings"
+	"poule/operations/settings"
+	"poule/runner"
 
 	"github.com/urfave/cli"
 )
@@ -25,15 +26,15 @@ func executeSingleOperation(c *cli.Context, descriptor catalog.OperationDescript
 	return runSingleOperation(config, op, f)
 }
 
-func runSingleOperation(c *configuration.Config, op operations.Operation, filters []*settings.Filter) error {
+func runSingleOperation(c *configuration.Config, op operations.Operation, filters settings.Filters) error {
 	if filterIncludesIssues(filters) && op.Accepts()&operations.Issues == operations.Issues {
-		if err := operations.Run(c, op, &operations.IssueRunner{}, filters); err != nil {
+		if err := runner.RunOnEveryItem(c, op, &runner.IssueRunner{}, filters); err != nil {
 			return err
 		}
 
 	}
 	if filterIncludesPullRequests(filters) && op.Accepts()&operations.PullRequests == operations.PullRequests {
-		if err := operations.Run(c, op, &operations.PullRequestRunner{}, filters); err != nil {
+		if err := runner.RunOnEveryItem(c, op, &runner.PullRequestRunner{}, filters); err != nil {
 			return err
 		}
 	}
