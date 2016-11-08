@@ -36,15 +36,21 @@ func doServeCommand(c *cli.Context) {
 	if err := yaml.Unmarshal(b, &serveConfig); err != nil {
 		log.Fatalf("Failed to read config file %q: %v", cfgPath, err)
 	}
-
 	overrides := configuration.FromGlobalFlags(c)
 	overrideConfig(&serveConfig.Config, overrides)
 
+	// Create the server.
 	s, err := server.NewServer(&serveConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Initialize repositories specific configuration from GitHub.
+	if err := s.FetchRepositoriesConfigs(); err != nil {
+		log.Fatal(err)
+	}
+
+	// Start the long-running job.
 	if err := s.Run(); err != nil {
 		log.Fatal(err)
 	}

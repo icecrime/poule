@@ -72,3 +72,35 @@ func (_m *PullRequestsService) ListCommits(owner string, repo string, number int
 
 	return r0, r1, r2
 }
+
+// ListFiles provides a mock function with given fields: owner, repo, number, opt
+func (_m *PullRequestsService) ListFiles(owner string, repo string, number int, opt *github.ListOptions) ([]*github.CommitFile, *github.Response, error) {
+	ret := _m.Called(owner, repo, number, opt)
+
+	var r0 []*github.CommitFile
+	if rf, ok := ret.Get(0).(func(string, string, int, *github.ListOptions) []*github.CommitFile); ok {
+		r0 = rf(owner, repo, number, opt)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*github.CommitFile)
+		}
+	}
+
+	var r1 *github.Response
+	if rf, ok := ret.Get(1).(func(string, string, int, *github.ListOptions) *github.Response); ok {
+		r1 = rf(owner, repo, number, opt)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*github.Response)
+		}
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(string, string, int, *github.ListOptions) error); ok {
+		r2 = rf(owner, repo, number, opt)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}

@@ -34,6 +34,7 @@ type IssuesService interface {
 type PullRequestsService interface {
 	// Pull requests API.
 	List(owner string, repo string, opt *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
+	ListFiles(owner string, repo string, number int, opt *github.ListOptions) ([]*github.CommitFile, *github.Response, error)
 
 	// Commits API.
 	ListCommits(owner string, repo string, number int, opt *github.ListOptions) ([]*github.RepositoryCommit, *github.Response, error)

@@ -54,7 +54,7 @@ func (o *versionMilestoneOperation) Apply(c *operations.Context, item gh.Item, u
 }
 
 func (o *versionMilestoneOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
-	return fmt.Sprintf("adding pull reques to milestone %d (%q)", *userData.(*github.Milestone).Number, *userData.(*github.Milestone).Title)
+	return fmt.Sprintf("adding pull request to milestone %d (%q)", *userData.(*github.Milestone).Number, *userData.(*github.Milestone).Title)
 }
 
 func (o *versionMilestoneOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
