@@ -32,7 +32,7 @@ func main() {
 	}
 
 	// Register each operation as an individual command.
-	for i, _ := range catalog.Index {
+	for i := range catalog.Index {
 		descriptor := catalog.Index[i]
 		app.Commands = append(app.Commands, makeCommand(descriptor))
 	}

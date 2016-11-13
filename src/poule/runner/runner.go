@@ -15,12 +15,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Runner provides items for operations to run on.
 type Runner interface {
 	ListItems(context *operations.Context, op operations.Operation, page int) ([]gh.Item, *github.Response, error)
 }
 
+// IssueRunner provides issue items for operations to run on.
 type IssueRunner struct{}
 
+// ListItems returns a list of GitHub items for the specified operation to run on.
 func (r *IssueRunner) ListItems(context *operations.Context, op operations.Operation, page int) ([]gh.Item, *github.Response, error) {
 	// Retrieve the list options from the operation, and override the page
 	// number with the current pointer.
@@ -38,14 +41,16 @@ func (r *IssueRunner) ListItems(context *operations.Context, op operations.Opera
 
 	// Convert the result to items.
 	items := []gh.Item{}
-	for i, _ := range issues {
+	for i := range issues {
 		items = append(items, gh.MakeIssueItem(issues[i]))
 	}
 	return items, resp, err
 }
 
+// PullRequestRunner provides pull request items for operations to run on.
 type PullRequestRunner struct{}
 
+// ListItems returns a list of GitHub items for the specified operation to run on.
 func (r *PullRequestRunner) ListItems(context *operations.Context, op operations.Operation, page int) ([]gh.Item, *github.Response, error) {
 	// Retrieve the list options from the operation, and override the page
 	// number with the current pointer.
@@ -63,12 +68,14 @@ func (r *PullRequestRunner) ListItems(context *operations.Context, op operations
 
 	// Convert the result to items.
 	items := []gh.Item{}
-	for i, _ := range prs {
+	for i := range prs {
 		items = append(items, gh.MakePullRequestItem(prs[i]))
 	}
 	return items, resp, err
 }
 
+// RunOnEveryItem runs the specified operation on all known items as provided by the specified
+// runner.
 func RunOnEveryItem(c *configuration.Config, op operations.Operation, runner Runner, filters settings.Filters) error {
 	context := operations.Context{}
 	context.Client = gh.MakeClient(c)
@@ -97,6 +104,7 @@ func RunOnEveryItem(c *configuration.Config, op operations.Operation, runner Run
 	return nil
 }
 
+// RunSingle runs the specified operations on a single GitHub item.
 func RunSingle(c *configuration.Config, op operations.Operation, item gh.Item, filters settings.Filters) error {
 	context := operations.Context{}
 	context.Client = gh.MakeClient(c)
@@ -138,6 +146,8 @@ func RunSingle(c *configuration.Config, op operations.Operation, item gh.Item, f
 	return nil
 }
 
+// RunSingleFromConfiguration runs the operations as described by its configuration on a single
+// GitHub item.
 func RunSingleFromConfiguration(c *configuration.Config, operationConfig configuration.OperationConfiguration, item gh.Item) error {
 	// Run the filters first: there's no need to go further if the filters are rejecting the item
 	// anyway.

@@ -8,6 +8,7 @@ import (
 	"github.com/urfave/cli"
 )
 
+// Config is the main configuration object for poule.
 type Config struct {
 	RunDelay   time.Duration `yaml:"delay"`
 	DryRun     bool          `yaml:"dry_run"`
@@ -16,12 +17,14 @@ type Config struct {
 	TokenFile  string        `yaml:"token_file"`
 }
 
+// OperationConfiguration describes an operation.
 type OperationConfiguration struct {
 	Type     string                 `yaml:"type"`
 	Filters  map[string]interface{} `yaml:"filters"`
 	Settings map[string]interface{} `yaml:"settings"`
 }
 
+// SplitRepository returns the username and repository associated with the configuration.
 func (c *Config) SplitRepository() (string, string) {
 	username, repository, err := getRepository(c.Repository)
 	if err != nil {
@@ -30,6 +33,7 @@ func (c *Config) SplitRepository() (string, string) {
 	return username, repository
 }
 
+// Validate verifies the validity of the configuration object.
 func (c *Config) Validate() error {
 	if _, _, err := getRepository(c.Repository); err != nil {
 		return err
@@ -42,6 +46,7 @@ func (c *Config) Delay() time.Duration {
 	return time.Duration(c.RunDelay.Seconds()) * time.Second
 }
 
+// FromGlobalFlags creates a configuration object from command line flags.
 func FromGlobalFlags(c *cli.Context) *Config {
 	config := &Config{
 		DryRun:     c.GlobalBool("dry-run"),

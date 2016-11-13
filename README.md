@@ -1,7 +1,7 @@
 Poule
 =====
 
-[![CircleCI](https://circleci.com/gh/icecrime/poule.svg?style=svg)](https://circleci.com/gh/icecrime/poule)
+[![Go Report Card](https://goreportcard.com/badge/github.com/icecrime/poule)](https://goreportcard.com/report/github.com/icecrime/poule) [![CircleCI](https://circleci.com/gh/icecrime/poule.svg?style=svg)](https://circleci.com/gh/icecrime/poule)
 
 # Description
 

@@ -27,17 +27,17 @@ func TestAutoMilestone(t *testing.T) {
 
 	// Mock the milestones API.
 	milestones := []*github.Milestone{
-		&github.Milestone{
+		{
 			Number: github.Int(1),
 			Title:  github.String("old-version"),
 			State:  github.String("closed"),
 		},
-		&github.Milestone{
+		{
 			Number: github.Int(2),
 			Title:  github.String("other-version"),
 			State:  github.String("open"),
 		},
-		&github.Milestone{
+		{
 			Number: github.Int(3),
 			Title:  github.String("test-version"),
 			State:  github.String("open"),

@@ -39,6 +39,7 @@ type OperationDescriptor interface {
 	OperationFromConfig(operations.Configuration) (operations.Operation, error)
 }
 
+// OperationDescriptors is a collection of OperationDescriptor.
 type OperationDescriptors []OperationDescriptor
 
 func (d OperationDescriptors) Len() int {

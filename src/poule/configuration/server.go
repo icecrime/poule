@@ -26,8 +26,10 @@ type Action struct {
 	Operations []OperationConfiguration `yaml:"operations"`
 }
 
+// StringSlice is a slice of strings.
 type StringSlice []string
 
+// Contains returns whether the StringSlice contains a given item.
 func (s StringSlice) Contains(item string) bool {
 	for _, v := range s {
 		if v == item {
@@ -37,8 +39,11 @@ func (s StringSlice) Contains(item string) bool {
 	return false
 }
 
+// Trigger associates a GitHub event type (e.g., "issues", or "pull request") with a collection of
+// corresponding actions (e.g., [ "opened", "reopened" ]).
 type Trigger map[string]StringSlice
 
+// Contains returns whether the triggers contains the specified (event, action) tuple.
 func (t Trigger) Contains(githubEvent, githubAction string) bool {
 	if actions, ok := t[githubEvent]; ok {
 		return actions.Contains(githubAction)

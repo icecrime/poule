@@ -139,9 +139,8 @@ func (o *dcoCheckOperation) applyUnsigned(c *operations.Context, pr *github.Pull
 func (o *dcoCheckOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
 	if isSigned := userData.(bool); isSigned {
 		return fmt.Sprintf("pull request is signed: removing label %q and explanation comment", o.UnsignedLabel)
-	} else {
-		return fmt.Sprintf("pull request is unsigned: adding label %q and explanation comment", o.UnsignedLabel)
 	}
+	return fmt.Sprintf("pull request is unsigned: adding label %q and explanation comment", o.UnsignedLabel)
 }
 
 func (o *dcoCheckOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
@@ -196,7 +195,7 @@ func findDCOComments(c *operations.Context, pr *github.PullRequest) ([]*github.I
 
 	// Go through the comments looking for the automated token.
 	automatedComments := []*github.IssueComment{}
-	for i, _ := range comments {
+	for i := range comments {
 		comment := comments[i]
 		if comment.Body != nil && strings.Contains(*comment.Body, dcoCommentToken) {
 			automatedComments = append(automatedComments, comment)

@@ -12,17 +12,18 @@ import (
 	"github.com/google/go-github/github"
 )
 
-type PartialMessage struct {
+type partialMessage struct {
 	GitHubEvent    string `json:"X-GitHub-Event"`
 	GitHubDelivery string `json:"X-GitHub-Delivery"`
 	HubSignature   string `json:"X-Hub-Signature"`
 	Action         string `json:"action"`
 }
 
+// HandleMessage handles an NSQ message.
 func (s *Server) HandleMessage(message *nsq.Message) error {
 	// Unserialize the GitHub webhook payload into a partial message in order to inspect the type
 	// of event and handle accordingly.
-	var m PartialMessage
+	var m partialMessage
 	if err := json.Unmarshal(message.Body, &m); err != nil {
 		return err
 	}
@@ -69,6 +70,7 @@ outer_loop:
 func (s *Server) executeAction(action configuration.Action, item gh.Item) error {
 	for _, operationConfig := range action.Operations {
 		logrus.WithFields(logrus.Fields{
+			"number":     item.Number(),
 			"operation":  operationConfig.Type,
 			"repository": item.Repository(),
 		}).Info("running operation")

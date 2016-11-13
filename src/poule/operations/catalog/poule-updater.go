@@ -13,6 +13,8 @@ import (
 	"github.com/urfave/cli"
 )
 
+// PouleUpdateCallback is the callback to call when a configuration update is required.
+//
 // OK, global state is terrible, but I like to think of `pouleUpdaterOperation` as an exception
 // rather than the norm. If more of such operations need to exist in the future, we may want to
 // create a special kind of "core operations" which have privileged access to the configuration.

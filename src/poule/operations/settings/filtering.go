@@ -123,6 +123,7 @@ func makeAssignedFilter(value string) (*Filter, error) {
 	return asFilter(AssignedFilter{b}), nil
 }
 
+// ApplyIssue applies the filter to the specified issue.
 func (f AssignedFilter) ApplyIssue(issue *github.Issue) bool {
 	return f.isAssigned == (issue.Assignee != nil)
 }
@@ -156,10 +157,12 @@ func makeCommentsFilter(value string) (*Filter, error) {
 	return asFilter(CommentsFilter{predicate}), nil
 }
 
+// ApplyIssue applies the filter to the specified issue.
 func (f CommentsFilter) ApplyIssue(issue *github.Issue) bool {
 	return f.predicate(*issue.Comments)
 }
 
+// ApplyPullRequest applies the filter to the specified pull request.
 func (f CommentsFilter) ApplyPullRequest(pullRequest *github.PullRequest) bool {
 	return f.predicate(*pullRequest.Comments)
 }
@@ -180,12 +183,14 @@ func makeIsFilter(value string) (*Filter, error) {
 	}
 }
 
+// ApplyIssue applies the filter to the specified issue.
 func (f IsFilter) ApplyIssue(issue *github.Issue) bool {
 	// We're called on an issue: filter passes unless configured to accept pull
 	// requests, and if the issue isn't really a pull request.
 	return !f.PullRequestOnly && (issue.PullRequestLinks == nil)
 }
 
+// ApplyPullRequest applies the filter to the specified pull request.
 func (f IsFilter) ApplyPullRequest(pullRequest *github.PullRequest) bool {
 	// We're called on a pull request: filter passes if configured to accept
 	// pull requests.
@@ -203,6 +208,7 @@ func makeWithLabelsFilter(value string) (*Filter, error) {
 	return asFilter(WithLabelsFilter{labels}), nil
 }
 
+// ApplyIssue applies the filter to the specified issue.
 func (f WithLabelsFilter) ApplyIssue(issue *github.Issue) bool {
 	return gh.HasAllLabels(f.labels, issue.Labels)
 }
@@ -218,6 +224,7 @@ func makeWithoutLabelsFilter(value string) (*Filter, error) {
 	return asFilter(WithoutLabelsFilter{labels}), nil
 }
 
+// ApplyIssue applies the filter to the specified issue.
 func (f WithoutLabelsFilter) ApplyIssue(issue *github.Issue) bool {
 	return !gh.HasAnyLabels(f.labels, issue.Labels)
 }

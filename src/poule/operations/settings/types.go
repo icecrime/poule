@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	KeyValuesSeparator = ":"
-	ValuesSeparator    = ","
+	keyValuesSeparator = ":"
+	valuesSeparator    = ","
 )
 
 // MultiValuedKeys represents a dictionary where each key can have multiple
@@ -32,10 +32,10 @@ func NewMultiValuedKeysFromSlice(collection []string) (MultiValuedKeys, error) {
 	m := NewMultiValuedKeys()
 	for _, item := range collection {
 		var s []string
-		if s = strings.SplitN(item, KeyValuesSeparator, 2); len(s) != 2 {
+		if s = strings.SplitN(item, keyValuesSeparator, 2); len(s) != 2 {
 			return nil, fmt.Errorf("invalid item format %q (expected `key:values`)", item)
 		}
-		m[s[0]] = strings.Split(s[1], ValuesSeparator)
+		m[s[0]] = strings.Split(s[1], valuesSeparator)
 	}
 	return m, nil
 }

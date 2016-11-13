@@ -13,6 +13,7 @@ import (
 	"github.com/urfave/cli"
 )
 
+// DockerVersionURL is the URL for the Docker VERSION file.
 const DockerVersionURL = "https://raw.githubusercontent.com/docker/docker/master/VERSION"
 
 func init() {

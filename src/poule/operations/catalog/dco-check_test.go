@@ -56,13 +56,13 @@ func TestDCOFailure(t *testing.T) {
 	clt.MockPullRequests.
 		On("ListCommits", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.ListOptions")).
 		Return([]*github.RepositoryCommit{
-			&github.RepositoryCommit{
+			{
 				Commit: &github.Commit{
 					SHA:     github.String(test.CommitSHA[0]),
 					Message: github.String("Commit message"),
 				},
 			},
-			&github.RepositoryCommit{
+			{
 				Commit: &github.Commit{
 					SHA:     github.String(test.CommitSHA[1]),
 					Message: github.String("Signed-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
@@ -122,11 +122,11 @@ func TestDCOSuccess(t *testing.T) {
 	clt.MockPullRequests.
 		On("ListCommits", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.ListOptions")).
 		Return([]*github.RepositoryCommit{
-			&github.RepositoryCommit{
+			{
 				SHA:     github.String(test.CommitSHA[0]),
 				Message: github.String("This is signed.\nSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
 			},
-			&github.RepositoryCommit{
+			{
 				SHA:     github.String(test.CommitSHA[1]),
 				Message: github.String("This too.\n\tSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>  \nYep.\n"),
 			},
@@ -135,15 +135,15 @@ func TestDCOSuccess(t *testing.T) {
 	clt.MockIssues.
 		On("ListComments", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.IssueListCommentsOptions")).
 		Return([]*github.IssueComment{
-			&github.IssueComment{
+			{
 				ID:   github.Int(test.CommentID),
 				Body: github.String(fmt.Sprintf("%s\nPlease sign your commit!", dcoCommentToken)),
 			},
-			&github.IssueComment{
+			{
 				ID:   github.Int(test.CommentID + 1),
 				Body: github.String("Merge it!"),
 			},
-			&github.IssueComment{
+			{
 				ID:   github.Int(test.CommentID + 2),
 				Body: github.String("Unrelated comment."),
 			},
@@ -190,7 +190,7 @@ func TestDCOSuccessLabelMissing(t *testing.T) {
 	clt.MockPullRequests.
 		On("ListCommits", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.ListOptions")).
 		Return([]*github.RepositoryCommit{
-			&github.RepositoryCommit{
+			{
 				SHA:     github.String(test.CommitSHA[0]),
 				Message: github.String("This is signed.\nSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
 			},
