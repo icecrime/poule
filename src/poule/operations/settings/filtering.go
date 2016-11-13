@@ -167,7 +167,7 @@ func (f CommentsFilter) ApplyPullRequest(pullRequest *github.PullRequest) bool {
 	return f.predicate(*pullRequest.Comments)
 }
 
-// Is filters issues and pull requests based on their type.
+// IsFilter filters issues and pull requests based on their type.
 type IsFilter struct {
 	PullRequestOnly bool
 }
