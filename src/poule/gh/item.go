@@ -20,7 +20,7 @@ func MakeIssueItem(issue *github.Issue) Item {
 	}
 }
 
-// MakeIssueItem create an Item wrapper around a GitHub pull request.
+// MakePullRequestItem create an Item wrapper around a GitHub pull request.
 func MakePullRequestItem(pullRequest *github.PullRequest) Item {
 	return Item{
 		PullRequest: pullRequest,

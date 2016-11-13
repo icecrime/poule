@@ -26,7 +26,7 @@ func (p *PullRequestBuilder) Item() gh.Item {
 	return gh.MakePullRequestItem(p.Value)
 }
 
-// BasBranch sets the Base attribute of the pull request.
+// BaseBranch sets the Base attribute of the pull request.
 func (p *PullRequestBuilder) BaseBranch(username, repository, ref string, SHA string) *PullRequestBuilder {
 	p.Value.Base = &github.PullRequestBranch{
 		Ref: github.String(ref),
