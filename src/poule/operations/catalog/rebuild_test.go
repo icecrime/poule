@@ -55,7 +55,7 @@ func TestRebuild(t *testing.T) {
 
 	// Mock GitHub API replies to issue and statuses retrieval. We expect that
 	// the operation will only attempt to rebuild the "conf_error" and the
-	// "conf_fail" jobs, and neither the pending, the succesful one (even if it
+	// "conf_fail" jobs, and neither the pending, the successful one (even if it
 	// did previously fail), and the one that failed but was not included in
 	// the configurations to rebuild.
 	currentTime := time.Now()
@@ -103,7 +103,7 @@ func TestRebuildAllConfigurations(t *testing.T) {
 
 	// Mock GitHub API replies to issue and statuses retrieval. We expect that
 	// the operation will only attempt to rebuild the "conf_error" and the
-	// "conf_fail" jobs, and neither the pending, the succesful one (even if it
+	// "conf_fail" jobs, and neither the pending, the successful one (even if it
 	// did previously fail), and the one that failed but was not included in
 	// the configurations to rebuild.
 	currentTime := time.Now()
@@ -183,7 +183,7 @@ func TestRebuildWithLabelCriteria(t *testing.T) {
 
 	// Mock GitHub API replies to issue and statuses retrieval. We expect that
 	// the operation will only attempt to rebuild the "conf_error" and the
-	// "conf_fail" jobs, and neither the pending, the succesful one (even if it
+	// "conf_fail" jobs, and neither the pending, the successful one (even if it
 	// did previously fail), and the one that failed but was not included in
 	// the configurations to rebuild.
 	currentTime := time.Now()
@@ -247,7 +247,7 @@ func TestRebuildNewConfiguration(t *testing.T) {
 
 	// Mock GitHub API replies to issue and statuses retrieval. We expect that
 	// the operation will only attempt to rebuild the "conf_error" and the
-	// "conf_fail" jobs, and neither the pending, the succesful one (even if it
+	// "conf_fail" jobs, and neither the pending, the successful one (even if it
 	// did previously fail), and the one that failed but was not included in
 	// the configurations to rebuild.
 	currentTime := time.Now()

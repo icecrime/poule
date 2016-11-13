@@ -149,7 +149,7 @@ func (o *prRebuildOperation) Filter(c *operations.Context, item gh.Item) (operat
 	rebuildCandidates := o.Configurations
 	latestStatuses := gh.GetLatestStatuses(repoStatuses)
 	if len(rebuildCandidates) == 0 {
-		for config, _ := range latestStatuses {
+		for config := range latestStatuses {
 			rebuildCandidates = append(rebuildCandidates, config)
 		}
 	}

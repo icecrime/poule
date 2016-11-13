@@ -5,11 +5,13 @@ import (
 	"time"
 )
 
+// ExtDuration is an extension of time.Duration to support units longer than hours.
 type ExtDuration struct {
 	Quantity int64
 	Unit     rune
 }
 
+// ParseExtDuration parses an ExtDuration from a string.
 func ParseExtDuration(value string) (ExtDuration, error) {
 	e := ExtDuration{}
 	if n, err := fmt.Sscanf(value, "%d%c", &e.Quantity, &e.Unit); n != 2 {
@@ -26,6 +28,7 @@ func ParseExtDuration(value string) (ExtDuration, error) {
 	return e, nil
 }
 
+// Duration returns the value as a time.Duration.
 func (e ExtDuration) Duration() time.Duration {
 	day := 24 * time.Hour
 	switch e.Unit {
@@ -42,6 +45,7 @@ func (e ExtDuration) Duration() time.Duration {
 	}
 }
 
+// String returns a string representation of the ExtDuration.
 func (e ExtDuration) String() string {
 	switch e.Unit {
 	case 'd', 'D':

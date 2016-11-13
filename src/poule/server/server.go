@@ -20,14 +20,17 @@ import (
 )
 
 const (
+	// GitHubRawURLPrefix is the URL prefix for GitHub content retrieval.
 	GitHubRawURLPrefix = "https://raw.githubusercontent.com"
 )
 
+// Server provides operation trigger on GitHub events through a long-running job.
 type Server struct {
 	config             *configuration.Server
 	repositoriesConfig map[string][]configuration.Action
 }
 
+// NewServer returns a new server instance.
 func NewServer(config *configuration.Server) (*Server, error) {
 	server := &Server{
 		config:             config,
@@ -40,7 +43,8 @@ func NewServer(config *configuration.Server) (*Server, error) {
 	return server, nil
 }
 
-func (s *Server) Run() error {
+// Run starts the event loop, and only returns when completed.
+func (s *Server) Run() {
 	// Create and start monitoring queues.
 	queues := createQueues(s.config, s)
 	stopChan := monitorQueues(queues)
@@ -53,19 +57,20 @@ func (s *Server) Run() error {
 		select {
 		case <-stopChan:
 			logrus.Debug("All queues exited")
-			return nil
+			break
 		case sig := <-sigChan:
 			logrus.WithField("signal", sig).Debug("received signal")
 			for _, q := range queues {
 				q.Consumer.Stop()
 			}
+			break
 		}
 	}
-	return nil
 }
 
+// FetchRepositoriesConfigs retrieves the repository specific configurations from GitHub.
 func (s *Server) FetchRepositoriesConfigs() error {
-	for repository, _ := range s.config.Repositories {
+	for repository := range s.config.Repositories {
 		if err := s.updateRepositoryConfiguration(repository); err != nil {
 			logrus.Warnf(err.Error())
 			continue
@@ -74,10 +79,12 @@ func (s *Server) FetchRepositoriesConfigs() error {
 	return nil
 }
 
+// Queue represents one NSQ queue.
 type Queue struct {
 	Consumer *nsq.Consumer
 }
 
+// NewQueue returns a new queue instance.
 func NewQueue(topic, channel, lookupd string, handler nsq.Handler) (*Queue, error) {
 	logger := log.New(os.Stderr, "", log.Flags())
 	consumer, err := nsq.NewConsumer(topic, channel, nsq.NewConfig())

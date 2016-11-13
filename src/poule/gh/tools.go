@@ -6,6 +6,7 @@ import (
 	"github.com/google/go-github/github"
 )
 
+// HasLabel returns true if a collection of labels contains the specified label.
 func HasLabel(label string, issueLabels []github.Label) bool {
 	for _, issueLabel := range issueLabels {
 		if label == *issueLabel.Name {
@@ -15,6 +16,8 @@ func HasLabel(label string, issueLabels []github.Label) bool {
 	return false
 }
 
+// HasAnyLabels returns true if a collection of labels contains any of the specified collection of
+// labels.
 func HasAnyLabels(labels []string, issueLabels []github.Label) bool {
 	for _, label := range labels {
 		if HasLabel(label, issueLabels) {
@@ -24,6 +27,8 @@ func HasAnyLabels(labels []string, issueLabels []github.Label) bool {
 	return false
 }
 
+// HasAllLabels returns true if a collection of labels contains all of the specified collection of
+// labels.
 func HasAllLabels(labels []string, issueLabels []github.Label) bool {
 	for _, label := range labels {
 		if !HasLabel(label, issueLabels) {
@@ -33,6 +38,8 @@ func HasAllLabels(labels []string, issueLabels []github.Label) bool {
 	return true
 }
 
+// HasFailingCILabel returns true if a collection of labels contains the particular label indicating
+// test failures.
 func HasFailingCILabel(labels []github.Label) bool {
 	for _, l := range labels {
 		if *l.Name == configuration.FailingCILabel {

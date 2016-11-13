@@ -51,9 +51,7 @@ func doServeCommand(c *cli.Context) {
 	}
 
 	// Start the long-running job.
-	if err := s.Run(); err != nil {
-		log.Fatal(err)
-	}
+	s.Run()
 }
 
 func overrideConfig(config, overrides *configuration.Config) {

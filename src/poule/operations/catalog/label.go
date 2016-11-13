@@ -114,7 +114,7 @@ func (o *labelOperation) Filter(c *operations.Context, item gh.Item) (operations
 
 	// Convert the set of unique labels to a string slice.
 	labels := []string{}
-	for key, _ := range labelSet {
+	for key := range labelSet {
 		labels = append(labels, key)
 	}
 	return operations.Accept, labels, nil

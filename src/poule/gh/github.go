@@ -10,6 +10,7 @@ type Client interface {
 	Repositories() RepositoriesService
 }
 
+// IssuesService is the interface to the GitHub issue service.
 //go:generate mockery -name=IssuesService -output ../test/mocks
 type IssuesService interface {
 	// Issue API.
@@ -30,6 +31,7 @@ type IssuesService interface {
 	ListMilestones(owner string, repo string, opt *github.MilestoneListOptions) ([]*github.Milestone, *github.Response, error)
 }
 
+// PullRequestsService is the interface to the GitHub pull request service.
 //go:generate mockery -name=PullRequestsService -output ../test/mocks
 type PullRequestsService interface {
 	// Pull requests API.
@@ -40,6 +42,7 @@ type PullRequestsService interface {
 	ListCommits(owner string, repo string, number int, opt *github.ListOptions) ([]*github.RepositoryCommit, *github.Response, error)
 }
 
+// RepositoriesService is the interface to the GitHub repositories service.
 //go:generate mockery -name=RepositoriesService -output ../test/mocks
 type RepositoriesService interface {
 	// Statuses API.

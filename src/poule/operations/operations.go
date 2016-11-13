@@ -6,6 +6,7 @@ import (
 	"github.com/google/go-github/github"
 )
 
+// Context is the execution context for an operation.
 type Context struct {
 	// Client is the GitHub API client instance.
 	Client gh.Client
