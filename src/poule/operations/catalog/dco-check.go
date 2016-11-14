@@ -181,25 +181,32 @@ func (o *dcoCheckOperation) PullRequestListOptions(c *operations.Context) *githu
 }
 
 func findDCOComments(c *operations.Context, pr *github.PullRequest) ([]*github.IssueComment, error) {
-	// Retrieve all comments for that pull request.
-	comments, _, err := c.Client.Issues().ListComments(c.Username, c.Repository, *pr.Number, &github.IssueListCommentsOptions{
+	automatedComments := []*github.IssueComment{}
+	issuesListOptions := &github.IssueListCommentsOptions{
 		Sort:      "created",
 		Direction: "desc",
 		ListOptions: github.ListOptions{
 			PerPage: 200,
 		},
-	})
-	if err != nil {
-		return nil, err
 	}
 
-	// Go through the comments looking for the automated token.
-	automatedComments := []*github.IssueComment{}
-	for i := range comments {
-		comment := comments[i]
-		if comment.Body != nil && strings.Contains(*comment.Body, dcoCommentToken) {
-			automatedComments = append(automatedComments, comment)
+	// Retrieve all comments for that pull request.
+	for page := 1; page != 0; {
+		issuesListOptions.ListOptions.Page = page
+		comments, resp, err := c.Client.Issues().ListComments(c.Username, c.Repository, *pr.Number, issuesListOptions)
+		if err != nil {
+			return nil, err
 		}
+
+		// Go through the comments looking for the automated token.
+		for i := range comments {
+			comment := comments[i]
+			if comment.Body != nil && strings.Contains(*comment.Body, dcoCommentToken) {
+				automatedComments = append(automatedComments, comment)
+			}
+		}
+
+		page = resp.NextPage
 	}
 	return automatedComments, nil
 }
