@@ -27,7 +27,7 @@ configuration:
         "docker/docker",
       ]
       triggers:
-        issues:         [ edted, opened, reopened ]
+        issues:         [ edited, opened, reopened ]
       operations:
           - type:       label
             settings: {
