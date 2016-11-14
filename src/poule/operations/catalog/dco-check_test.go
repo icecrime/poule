@@ -72,7 +72,7 @@ func TestDCOFailure(t *testing.T) {
 
 	clt.MockIssues.
 		On("ListComments", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.IssueListCommentsOptions")).
-		Return([]*github.IssueComment{}, nil, nil)
+		Return([]*github.IssueComment{}, &github.Response{NextPage: 0}, nil)
 
 	clt.MockIssues.
 		On("CreateComment", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.IssueComment")).
@@ -147,7 +147,7 @@ func TestDCOSuccess(t *testing.T) {
 				ID:   github.Int(test.CommentID + 2),
 				Body: github.String("Unrelated comment."),
 			},
-		}, nil, nil)
+		}, &github.Response{NextPage: 0}, nil)
 
 	clt.MockIssues.
 		On("DeleteComment", ctx.Username, ctx.Repository, test.CommentID).
@@ -198,7 +198,7 @@ func TestDCOSuccessLabelMissing(t *testing.T) {
 
 	clt.MockIssues.
 		On("ListComments", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.IssueListCommentsOptions")).
-		Return([]*github.IssueComment{}, nil, nil)
+		Return([]*github.IssueComment{}, &github.Response{NextPage: 0}, nil)
 
 	clt.MockRepositories.
 		On("CreateStatus", ctx.Username, ctx.Repository, "0x456", mock.AnythingOfType("*github.RepoStatus")).
