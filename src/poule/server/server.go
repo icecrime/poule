@@ -55,7 +55,10 @@ func (s *Server) Run() {
 
 	for {
 		select {
-		case <-stopChan:
+		case _, ok := <-stopChan:
+			if !ok {
+				return
+			}
 			logrus.Debug("All queues exited")
 			break
 		case sig := <-sigChan:
@@ -131,6 +134,7 @@ func monitorQueues(queues []*Queue) <-chan struct{} {
 	go func() {
 		wg.Wait()
 		stopChan <- struct{}{}
+		close(stopChan)
 	}()
 	return stopChan
 }
