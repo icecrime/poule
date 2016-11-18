@@ -8,6 +8,7 @@ type Client interface {
 	Issues() IssuesService
 	PullRequests() PullRequestsService
 	Repositories() RepositoriesService
+	Search() SearchService
 }
 
 // IssuesService is the interface to the GitHub issue service.
@@ -35,6 +36,7 @@ type IssuesService interface {
 //go:generate mockery -name=PullRequestsService -output ../test/mocks
 type PullRequestsService interface {
 	// Pull requests API.
+	Get(owner string, repo string, number int) (*github.PullRequest, *github.Response, error)
 	List(owner string, repo string, opt *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
 	ListFiles(owner string, repo string, number int, opt *github.ListOptions) ([]*github.CommitFile, *github.Response, error)
 
@@ -48,4 +50,10 @@ type RepositoriesService interface {
 	// Statuses API.
 	CreateStatus(owner, repo, ref string, sts *github.RepoStatus) (*github.RepoStatus, *github.Response, error)
 	ListStatuses(owner, repo, ref string, opt *github.ListOptions) ([]*github.RepoStatus, *github.Response, error)
+}
+
+// SearchService is the interface to the GitHub search service.
+//go:generate mockery -name=SearchService -output ../test/mocks
+type SearchService interface {
+	Issues(query string, opt *github.SearchOptions) (*github.IssuesSearchResult, *github.Response, error)
 }

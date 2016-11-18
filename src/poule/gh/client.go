@@ -29,6 +29,11 @@ func (d DefaultClient) Repositories() RepositoriesService {
 	return d.Client.Repositories
 }
 
+// Search returns the search service instance.
+func (d DefaultClient) Search() SearchService {
+	return d.Client.Search
+}
+
 // GetToken returns the GitHub API token to use.
 func GetToken(c *configuration.Config) string {
 	if c.Token != "" {

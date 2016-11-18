@@ -13,6 +13,7 @@ type TestClient struct {
 	MockIssues       mocks.IssuesService
 	MockPullRequests mocks.PullRequestsService
 	MockRepositories mocks.RepositoriesService
+	MockSearch       mocks.SearchService
 }
 
 // Issues returns the issue service instance.
@@ -28,6 +29,11 @@ func (t *TestClient) PullRequests() gh.PullRequestsService {
 // Repositories returns the repository service instance.
 func (t *TestClient) Repositories() gh.RepositoriesService {
 	return &t.MockRepositories
+}
+
+// Search returns the search service instance.
+func (t *TestClient) Search() gh.SearchService {
+	return &t.MockSearch
 }
 
 // MakeLabel is a helper to create a GitHub label.
