@@ -41,6 +41,38 @@ func (_m *RepositoriesService) CreateStatus(owner string, repo string, ref strin
 	return r0, r1, r2
 }
 
+// GetBranch provides a mock function with given fields: owner, repo, branch
+func (_m *RepositoriesService) GetBranch(owner string, repo string, branch string) (*github.Branch, *github.Response, error) {
+	ret := _m.Called(owner, repo, branch)
+
+	var r0 *github.Branch
+	if rf, ok := ret.Get(0).(func(string, string, string) *github.Branch); ok {
+		r0 = rf(owner, repo, branch)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*github.Branch)
+		}
+	}
+
+	var r1 *github.Response
+	if rf, ok := ret.Get(1).(func(string, string, string) *github.Response); ok {
+		r1 = rf(owner, repo, branch)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*github.Response)
+		}
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(string, string, string) error); ok {
+		r2 = rf(owner, repo, branch)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // ListStatuses provides a mock function with given fields: owner, repo, ref, opt
 func (_m *RepositoriesService) ListStatuses(owner string, repo string, ref string, opt *github.ListOptions) ([]*github.RepoStatus, *github.Response, error) {
 	ret := _m.Called(owner, repo, ref, opt)

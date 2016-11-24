@@ -47,6 +47,9 @@ type PullRequestsService interface {
 // RepositoriesService is the interface to the GitHub repositories service.
 //go:generate mockery -name=RepositoriesService -output ../test/mocks
 type RepositoriesService interface {
+	// Branches API.
+	GetBranch(owner, repo, branch string) (*github.Branch, *github.Response, error)
+
 	// Statuses API.
 	CreateStatus(owner, repo, ref string, sts *github.RepoStatus) (*github.RepoStatus, *github.Response, error)
 	ListStatuses(owner, repo, ref string, opt *github.ListOptions) ([]*github.RepoStatus, *github.Response, error)
