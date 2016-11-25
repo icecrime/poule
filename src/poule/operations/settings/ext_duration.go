@@ -39,7 +39,7 @@ func (e ExtDuration) Duration() time.Duration {
 	case 'm', 'M':
 		return time.Duration(e.Quantity) * 31 * day
 	case 'y', 'Y':
-		return time.Duration(e.Quantity) * 356 * day
+		return time.Duration(e.Quantity) * 365 * day
 	default:
 		panic("invalid duration unit")
 	}
