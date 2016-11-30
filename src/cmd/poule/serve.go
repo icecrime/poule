@@ -1,14 +1,12 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
 
 	"poule/configuration"
 	"poule/server"
 
 	"github.com/urfave/cli"
-	yaml "gopkg.in/yaml.v2"
 )
 
 var serveCommand = cli.Command{
@@ -18,29 +16,22 @@ var serveCommand = cli.Command{
 		cli.StringFlag{
 			Name:  "config, c",
 			Value: "poule-server.yml",
-			Usage: "Poule configuration",
+			Usage: "Poule server configuration",
 		},
 	},
 	Action: doServeCommand,
 }
 
 func doServeCommand(c *cli.Context) {
-	cfgPath := c.String("config")
-	b, err := ioutil.ReadFile(cfgPath)
+	serveConfig, err := validateServerConfig(c.String("config"))
 	if err != nil {
-		log.Fatalf("Failed to read file %q: %v", cfgPath, err)
-	}
-
-	// Read the YAML configuration file identified by the argument.
-	serveConfig := configuration.Server{}
-	if err := yaml.Unmarshal(b, &serveConfig); err != nil {
-		log.Fatalf("Failed to read config file %q: %v", cfgPath, err)
+		log.Fatal(err)
 	}
 	overrides := configuration.FromGlobalFlags(c)
 	overrideConfig(&serveConfig.Config, overrides)
 
 	// Create the server.
-	s, err := server.NewServer(&serveConfig)
+	s, err := server.NewServer(serveConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
