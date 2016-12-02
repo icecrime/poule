@@ -29,6 +29,7 @@ func main() {
 	app.Commands = []cli.Command{
 		batchCommand,
 		serveCommand,
+		validateCommand,
 	}
 
 	// Register each operation as an individual command.
