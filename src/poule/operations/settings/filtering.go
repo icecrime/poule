@@ -7,6 +7,7 @@ import (
 
 	"poule/gh"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
@@ -55,6 +56,10 @@ type Filters []*Filter
 func (f Filters) Apply(item gh.Item) bool {
 	for _, filter := range f {
 		if !filter.Apply(item) {
+			logrus.WithFields(logrus.Fields{
+				"filter": filter.Strategy.String(),
+				"number": item.Number(),
+			}).Debug("item rejected by filter")
 			return false
 		}
 	}
@@ -63,7 +68,7 @@ func (f Filters) Apply(item gh.Item) bool {
 
 // Filter accepts or rejects a GitHub item based on a strategy.
 type Filter struct {
-	Strategy interface{}
+	Strategy fmt.Stringer
 }
 
 // Apply returns whether the internal strategy is accepting or rejecting the
@@ -87,12 +92,14 @@ func (f *Filter) Apply(item gh.Item) bool {
 // issueFilter is a filtering strategy that applies to GitHub issues.
 type issueFilter interface {
 	ApplyIssue(*github.Issue) bool
+	String() string
 }
 
 // pullRequestFilter is a filtering strategy that applies to GitHub pull
 // requests.
 type pullRequestFilter interface {
 	ApplyPullRequest(*github.PullRequest) bool
+	String() string
 }
 
 // MakeFilter creates a filter from a type identifier and a string value.
@@ -128,8 +135,14 @@ func (f AssignedFilter) ApplyIssue(issue *github.Issue) bool {
 	return f.isAssigned == (issue.Assignee != nil)
 }
 
+// String returns a string representation of the filter
+func (f AssignedFilter) String() string {
+	return fmt.Sprintf("AssignedFilter(%t)", f.isAssigned)
+}
+
 // CommentsFilter filters issues based on the number of comments.
 type CommentsFilter struct {
+	filtValue string
 	predicate func(int) bool
 }
 
@@ -154,12 +167,20 @@ func makeCommentsFilter(value string) (*Filter, error) {
 	default:
 		return nil, errors.Errorf("invalid operator %c for \"comments\" filter", operation)
 	}
-	return asFilter(CommentsFilter{predicate}), nil
+	return asFilter(CommentsFilter{
+		filtValue: value,
+		predicate: predicate,
+	}), nil
 }
 
 // ApplyIssue applies the filter to the specified issue.
 func (f CommentsFilter) ApplyIssue(issue *github.Issue) bool {
 	return f.predicate(*issue.Comments)
+}
+
+// String returns a string representation of the filter
+func (f CommentsFilter) String() string {
+	return fmt.Sprintf("CommentsFilter(%s)", f.filtValue)
 }
 
 // ApplyPullRequest applies the filter to the specified pull request.
@@ -197,6 +218,11 @@ func (f IsFilter) ApplyPullRequest(pullRequest *github.PullRequest) bool {
 	return f.PullRequestOnly
 }
 
+// String returns a string representation of the filter
+func (f IsFilter) String() string {
+	return fmt.Sprintf("IsFilter(PullRequestOnly=%t)", f.PullRequestOnly)
+}
+
 // WithLabelsFilter filters issues based on whether they bear all of the
 // specified labels.
 type WithLabelsFilter struct {
@@ -211,6 +237,11 @@ func makeWithLabelsFilter(value string) (*Filter, error) {
 // ApplyIssue applies the filter to the specified issue.
 func (f WithLabelsFilter) ApplyIssue(issue *github.Issue) bool {
 	return gh.HasAllLabels(f.labels, issue.Labels)
+}
+
+// String returns a string representation of the filter
+func (f WithLabelsFilter) String() string {
+	return fmt.Sprintf("WithLabelsFilter(%s)", strings.Join(f.labels, ","))
 }
 
 // WithoutLabelsFilter filters issues based on whether they bear none of the
@@ -229,9 +260,14 @@ func (f WithoutLabelsFilter) ApplyIssue(issue *github.Issue) bool {
 	return !gh.HasAnyLabels(f.labels, issue.Labels)
 }
 
+// String returns a string representation of the filter
+func (f WithoutLabelsFilter) String() string {
+	return fmt.Sprintf("WithoutLabelsFilter(%s)", strings.Join(f.labels, ","))
+}
+
 // Type conversion utilities.
 
-func asFilter(impl interface{}) *Filter {
+func asFilter(impl fmt.Stringer) *Filter {
 	return &Filter{
 		Strategy: impl,
 	}
