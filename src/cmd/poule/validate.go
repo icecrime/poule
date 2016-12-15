@@ -17,12 +17,12 @@ var validateCommand = cli.Command{
 	Flags: []cli.Flag{
 		cli.StringFlag{
 			Name:  "server-config",
-			Value: "poule-server.yml",
+			Value: "",
 			Usage: "Poule server configuration",
 		},
 		cli.StringFlag{
 			Name:  "repository-config",
-			Value: "poule.yml",
+			Value: "",
 			Usage: "Poule repository configuration",
 		},
 	},
@@ -59,15 +59,22 @@ func validateRepositoryConfig(cfgPath string) ([]configuration.Action, error) {
 }
 
 func doValidateCommand(c *cli.Context) {
-	if cfgPath := c.String("server-config"); cfgPath != "" {
-		if _, err := validateServerConfig(cfgPath); err != nil {
+	serverCfgPath := c.String("server-config")
+	repositoryCfgPath := c.String("repository-config")
+
+	if serverCfgPath == "" && repositoryCfgPath == "" {
+		log.Fatal("specify --server-config and/or --repository-config")
+	}
+
+	if serverCfgPath != "" {
+		if _, err := validateServerConfig(serverCfgPath); err != nil {
 			log.Fatal(err)
 		}
 		log.Println("server configuration file is valid")
 
 	}
-	if cfgPath := c.String("repository-config"); cfgPath != "" {
-		if _, err := validateRepositoryConfig(cfgPath); err != nil {
+	if repositoryCfgPath != "" {
+		if _, err := validateRepositoryConfig(repositoryCfgPath); err != nil {
 			log.Fatal(err)
 		}
 		log.Println("repository configuration file is valid")
