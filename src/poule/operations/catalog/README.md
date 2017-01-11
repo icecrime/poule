@@ -3,6 +3,7 @@ Poule operations
 
 | Operation           | Docker specific | Issues                  | Pull Requests           | Purpose                                                             |
 |---------------------|:---------------:|:-----------------------:|:-----------------------:|---------------------------------------------------------------------|
+| `assign`            |                 |                         | :ballot_box_with_check: | Auto-assign a random user to pull requests.                         |
 | `ci-label-clean`    |                 |                         | :ballot_box_with_check: | Remove CI failures labels where necessary.                          |
 | `dco-check`         | :whale:         |                         | :ballot_box_with_check: | Check for commit signatures, label and post a comment if missing.   |
 | `label`             |                 | :ballot_box_with_check: | :ballot_box_with_check: | Auto-label issues and pull requests according on matching regexps.  |
@@ -11,6 +12,24 @@ Poule operations
 | `rebuild`           | :whale:         |                         | :ballot_box_with_check: | Rebuild all or selected pull request jobs.                          |
 | `version-label`     | :whale:         | :ballot_box_with_check: |                         | Add a `version/x` label based on Docker version string in the body. |
 | `version-milestone` | ~               |                         | :ballot_box_with_check: | Add merged pull requests to the upcoming milestone.                 |
+
+## Assign
+
+#### Configuration
+
+| Configuration  | Description      |
+|----------------|------------------|
+| `users`        | A string array.  |
+
+#### Example configuration
+
+```yaml
+type: assign
+
+settings: {
+    users: ["icecrime", "vieux"]
+}
+```
 
 ## CI label cleaning
 

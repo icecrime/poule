@@ -15,6 +15,7 @@ type Client interface {
 //go:generate mockery -name=IssuesService -output ../test/mocks
 type IssuesService interface {
 	// Issue API.
+	AddAssignees(owner string, repo string, number int, assignees []string) (*github.Issue, *github.Response, error)
 	Edit(owner string, repo string, number int, issue *github.IssueRequest) (*github.Issue, *github.Response, error)
 	Get(owner string, repo string, number int) (*github.Issue, *github.Response, error)
 	ListByRepo(owner string, repo string, opt *github.IssueListByRepoOptions) ([]*github.Issue, *github.Response, error)
