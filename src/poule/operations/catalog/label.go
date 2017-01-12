@@ -30,7 +30,7 @@ func (d *labelDescriptor) CommandLineDescription() CommandLineDescription {
 	return CommandLineDescription{
 		Name:        "label",
 		Description: "Apply label(s) to items which title or body matches a pattern",
-		ArgsUsage:   "label=pattern[,pattern...]...",
+		ArgsUsage:   "label:pattern[,pattern...]...",
 	}
 }
 

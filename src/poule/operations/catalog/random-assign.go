@@ -25,15 +25,15 @@ type assignDescriptor struct{}
 
 func (d *assignDescriptor) CommandLineDescription() CommandLineDescription {
 	return CommandLineDescription{
-		Name:        "assign",
+		Name:        "random-assign",
 		Description: "Assign items to a random username from the `users` list.",
-		ArgsUsage:   "assign=user [user...] ...",
+		ArgsUsage:   "user [user...] ...",
 	}
 }
 
 func (d *assignDescriptor) OperationFromCli(c *cli.Context) (operations.Operation, error) {
 	if c.NArg() < 1 {
-		return nil, errors.Errorf("assign requires at least one argument")
+		return nil, errors.Errorf("random-assign requires at least one argument")
 	}
 	assignOperationConfig := &assignOperationConfig{Users: c.Args()}
 	return d.makeAssignOperation(assignOperationConfig)
@@ -69,20 +69,17 @@ func (o *assignOperation) Describe(c *operations.Context, item gh.Item, userData
 }
 
 func (o *assignOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
-	pull := item.PullRequest
 	// Reject if the item is already assigned
-	if len(pull.Assignees) > 0 || pull.Assignee != nil {
+	if len(item.Assignees()) > 0 || item.Assignee() != nil {
 		return operations.Reject, nil, nil
 	}
 
 retry:
 	assignee := o.users[rand.Intn(len(o.users))]
-
 	// Filter out author
-	if pull.User != nil && assignee == *pull.User.Login {
+	if item.User() != nil && assignee == *item.User().Login {
 		goto retry
 	}
-
 	return operations.Accept, assignee, nil
 }
 

@@ -13,7 +13,7 @@ func TestAssign(t *testing.T) {
 	// Create test pattern mapping.
 	users := []string{"user1", "user2"}
 
-	item := test.NewPullRequestBuilder(test.IssueNumber).
+	item := test.NewIssueBuilder(test.IssueNumber).
 		Title("This is the title of a pull request").
 		Body("Lorem ipsum dolor sit amet, consectetur adipiscing elit").
 		UserLogin(users[0]).
