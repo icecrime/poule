@@ -31,7 +31,7 @@ type OperationDescriptor interface {
 	CommandLineDescription() CommandLineDescription
 
 	// OperationFromCli returns a new instance of that operations configured as
-	// described by command line flags and arguemnts.
+	// described by command line flags and arguments.
 	OperationFromCli(*cli.Context) (operations.Operation, error)
 
 	// OperationFromConfig returns a new instance of that operation configured
