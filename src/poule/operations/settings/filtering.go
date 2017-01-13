@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"poule/gh"
 
@@ -105,6 +106,7 @@ type pullRequestFilter interface {
 // MakeFilter creates a filter from a type identifier and a string value.
 func MakeFilter(filterType, value string) (*Filter, error) {
 	typeMapping := map[string]func(string) (*Filter, error){
+		"age":      makeAgeFilter,
 		"assigned": makeAssignedFilter,
 		"comments": makeCommentsFilter,
 		"is":       makeIsFilter,
@@ -115,6 +117,34 @@ func MakeFilter(filterType, value string) (*Filter, error) {
 		return constructor(value)
 	}
 	return nil, errors.Errorf("unknown filter type %q", filterType)
+}
+
+// AgeFilter filters items based on their age.
+type AgeFilter struct {
+	age ExtDuration
+}
+
+func makeAgeFilter(value string) (*Filter, error) {
+	d, err := ParseExtDuration(value)
+	if err != nil {
+		return nil, errors.Errorf("invalid value %q for \"age\" filter", value)
+	}
+	return asFilter(AgeFilter{d}), nil
+}
+
+// ApplyIssue applies the filter to the specified issue.
+func (f AgeFilter) ApplyIssue(issue *github.Issue) bool {
+	return time.Since(*issue.CreatedAt) > f.age.Duration()
+}
+
+// ApplyPullRequest applies the filter to the specified pull request.
+func (f AgeFilter) ApplyPullRequest(pullRequest *github.PullRequest) bool {
+	return time.Since(*pullRequest.CreatedAt) > f.age.Duration()
+}
+
+// String returns a string representation of the filter
+func (f AgeFilter) String() string {
+	return fmt.Sprintf("AgeFilter(%s)", f.age)
 }
 
 // AssignedFilter filters issues based on whether they are assigned or not.
