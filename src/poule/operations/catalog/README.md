@@ -8,6 +8,7 @@ Poule operations
 | `label`             |                 | :ballot_box_with_check: | :ballot_box_with_check: | Auto-label issues and pull requests according on matching regexps.  |
 | `poule-updater`     |                 |                         | :ballot_box_with_check: | Reload `poule` configuration when a pull request modifies it.       |
 | `prune  `           |                 | :ballot_box_with_check: |                         | Manage issues with no activities.                                   |
+| `random-assign`     |                 | :ballot_box_with_check: | :ballot_box_with_check: | Auto-assign a random user to issues and pull requests.              |
 | `rebuild`           | :whale:         |                         | :ballot_box_with_check: | Rebuild all or selected pull request jobs.                          |
 | `version-label`     | :whale:         | :ballot_box_with_check: |                         | Add a `version/x` label based on Docker version string in the body. |
 | `version-milestone` | ~               |                         | :ballot_box_with_check: | Add merged pull requests to the upcoming milestone.                 |
@@ -50,6 +51,23 @@ modify a `poule.yml` file at the root of the repository, and reload the internal
 accordingly. It is only meant to be used as a server-mode operation.
 
 ## Prune
+
+## Random assign
+
+#### Configuration
+
+| Configuration  | Description      |
+|----------------|------------------|
+| `users`        | A string array.  |
+
+#### Example configuration
+
+```yaml
+type: random-assign
+settings: {
+    users: ["icecrime", "vieux"]
+}
+```
 
 ## Rebuild
 

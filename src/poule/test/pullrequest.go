@@ -94,3 +94,11 @@ func (p *PullRequestBuilder) Title(title string) *PullRequestBuilder {
 	p.Value.Title = github.String(title)
 	return p
 }
+
+// UserLogin sets the user of the pull request.
+func (p *PullRequestBuilder) UserLogin(title string) *PullRequestBuilder {
+	p.Value.User = &github.User{
+		Login: github.String(title),
+	}
+	return p
+}

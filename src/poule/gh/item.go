@@ -46,6 +46,30 @@ func (i Item) IsPullRequest() bool {
 	return i.PullRequest != nil
 }
 
+// Assignee returns the assignee of the item.
+func (i Item) Assignee() *github.User {
+	switch {
+	case i.Issue != nil:
+		return i.Issue.Assignee
+	case i.PullRequest != nil:
+		return i.PullRequest.Assignee
+	default:
+		panic("uninitialized item")
+	}
+}
+
+// Assignees returns the assignees of the item.
+func (i Item) Assignees() []*github.User {
+	switch {
+	case i.Issue != nil:
+		return i.Issue.Assignees
+	case i.PullRequest != nil:
+		return i.PullRequest.Assignees
+	default:
+		panic("uninitialized item")
+	}
+}
+
 // Body returns the text body of the item.
 func (i Item) Body() string {
 	switch {
@@ -103,7 +127,19 @@ func (i *Item) Type() string {
 	case i.PullRequest != nil:
 		return "pull_request"
 	default:
-		return "<none>"
+		panic("uninitialized item")
+	}
+}
+
+// User returns the user of the item.
+func (i *Item) User() *github.User {
+	switch {
+	case i.Issue != nil:
+		return i.Issue.User
+	case i.PullRequest != nil:
+		return i.PullRequest.User
+	default:
+		panic("uninitialized item")
 	}
 }
 

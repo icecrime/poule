@@ -44,3 +44,17 @@ func (p *IssueBuilder) Number(number int) *IssueBuilder {
 	p.Value.Number = github.Int(number)
 	return p
 }
+
+// Title sets the title of the pull request.
+func (p *IssueBuilder) Title(title string) *IssueBuilder {
+	p.Value.Title = github.String(title)
+	return p
+}
+
+// UserLogin sets the user of the pull request.
+func (p *IssueBuilder) UserLogin(title string) *IssueBuilder {
+	p.Value.User = &github.User{
+		Login: github.String(title),
+	}
+	return p
+}
