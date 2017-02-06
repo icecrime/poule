@@ -8,7 +8,6 @@ import (
 
 	"poule/gh"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
@@ -57,10 +56,6 @@ type Filters []*Filter
 func (f Filters) Apply(item gh.Item) bool {
 	for _, filter := range f {
 		if !filter.Apply(item) {
-			logrus.WithFields(logrus.Fields{
-				"filter": filter.Strategy.String(),
-				"number": item.Number(),
-			}).Debug("item rejected by filter")
 			return false
 		}
 	}
@@ -326,4 +321,24 @@ func filterValue(value interface{}) (string, error) {
 	}
 	// Anything else is an error.
 	return "", errors.Errorf("invalid data type \"%#v\" for filter value", value)
+}
+
+// Mass filtering utilities.
+
+func FilterIncludesIssues(filters []*Filter) bool {
+	for _, filter := range filters {
+		if f, ok := filter.Strategy.(IsFilter); ok && f.PullRequestOnly {
+			return false
+		}
+	}
+	return true
+}
+
+func FilterIncludesPullRequests(filters []*Filter) bool {
+	for _, filter := range filters {
+		if f, ok := filter.Strategy.(IsFilter); ok && !f.PullRequestOnly {
+			return false
+		}
+	}
+	return true
 }

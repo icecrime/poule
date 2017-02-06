@@ -15,16 +15,82 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Runner provides items for operations to run on.
-type Runner interface {
+type OperationRunner struct {
+	// Config is the global settings for execution.
+	Config *configuration.Config
+
+	// GlobalFilters are the filters to apply in addition to the operation's specific filtering.
+	GlobalFilters settings.Filters
+
+	// Operation is the operation to execute.
+	Operation operations.Operation
+}
+
+// NewOperationRunner returns an OperationRunner.
+func NewOperationRunner(config *configuration.Config, operation operations.Operation) *OperationRunner {
+	return &OperationRunner{
+		Config:    config,
+		Operation: operation,
+	}
+}
+
+// NewOperationRunnerFromConfig returns an OperationRunner parsed from configuration.
+func NewOperationRunnerFromConfig(config *configuration.Config, operationConfig *configuration.OperationConfiguration) (*OperationRunner, error) {
+	// Parse the filters.
+	filters, err := settings.ParseConfigurationFilters(operationConfig.Filters)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the operation.
+	descriptor, ok := catalog.ByNameIndex[operationConfig.Type]
+	if !ok {
+		return nil, errors.Errorf("unknown operation %q", operationConfig.Type)
+	}
+	operation, err := descriptor.OperationFromConfig(operationConfig.Settings)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return a fully ready OperationRunner.
+	return &OperationRunner{
+		Config:        config,
+		GlobalFilters: filters,
+		Operation:     operation,
+	}, nil
+}
+
+// Handle applies the operation to a single GitHub item.
+func (r *OperationRunner) Handle(item gh.Item) error {
+	return runSingle(r.Config, r.Operation, item, r.GlobalFilters)
+}
+
+// Handle applies the operation to the entire stock of GitHub items.
+func (r *OperationRunner) HandleStock() error {
+	if settings.FilterIncludesIssues(r.GlobalFilters) && r.Operation.Accepts()&operations.Issues == operations.Issues {
+		if err := runOnEveryItem(r.Config, r.Operation, &IssueLister{}, r.GlobalFilters); err != nil {
+			return err
+		}
+
+	}
+	if settings.FilterIncludesPullRequests(r.GlobalFilters) && r.Operation.Accepts()&operations.PullRequests == operations.PullRequests {
+		if err := runOnEveryItem(r.Config, r.Operation, &PullRequestLister{}, r.GlobalFilters); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Lister provides items for operations to run on.
+type Lister interface {
 	ListItems(context *operations.Context, op operations.Operation, page int) ([]gh.Item, *github.Response, error)
 }
 
-// IssueRunner provides issue items for operations to run on.
-type IssueRunner struct{}
+// IssueLister provides issue items for operations to run on.
+type IssueLister struct{}
 
 // ListItems returns a list of GitHub items for the specified operation to run on.
-func (r *IssueRunner) ListItems(context *operations.Context, op operations.Operation, page int) ([]gh.Item, *github.Response, error) {
+func (r *IssueLister) ListItems(context *operations.Context, op operations.Operation, page int) ([]gh.Item, *github.Response, error) {
 	// Retrieve the list options from the operation, and override the page
 	// number with the current pointer.
 	listOptions := op.IssueListOptions(context)
@@ -47,11 +113,11 @@ func (r *IssueRunner) ListItems(context *operations.Context, op operations.Opera
 	return items, resp, err
 }
 
-// PullRequestRunner provides pull request items for operations to run on.
-type PullRequestRunner struct{}
+// PullRequestLister provides pull request items for operations to run on.
+type PullRequestLister struct{}
 
 // ListItems returns a list of GitHub items for the specified operation to run on.
-func (r *PullRequestRunner) ListItems(context *operations.Context, op operations.Operation, page int) ([]gh.Item, *github.Response, error) {
+func (r *PullRequestLister) ListItems(context *operations.Context, op operations.Operation, page int) ([]gh.Item, *github.Response, error) {
 	// Retrieve the list options from the operation, and override the page
 	// number with the current pointer.
 	listOptions := op.PullRequestListOptions(context)
@@ -74,38 +140,8 @@ func (r *PullRequestRunner) ListItems(context *operations.Context, op operations
 	return items, resp, err
 }
 
-// RunOnEveryItem runs the specified operation on all known items as provided by the specified
-// runner.
-func RunOnEveryItem(c *configuration.Config, op operations.Operation, runner Runner, filters settings.Filters) error {
-	context := operations.Context{}
-	context.Client = gh.MakeClient(c)
-	context.Username, context.Repository = c.SplitRepository()
-
-	for page := 1; page != 0; {
-		items, resp, err := runner.ListItems(&context, op, page)
-		if err != nil {
-			return err
-		}
-
-		// Handle each issue, filtering them using the operation first.
-		for _, item := range items {
-			if err := RunSingle(c, op, item, filters); err != nil {
-				return err
-			}
-		}
-
-		// Move on to the next page, and respect the specified delay to avoid
-		// hammering the GitHub API.
-		page = resp.NextPage
-		if c.Delay() > 0 {
-			time.Sleep(c.Delay())
-		}
-	}
-	return nil
-}
-
-// RunSingle runs the specified operations on a single GitHub item.
-func RunSingle(c *configuration.Config, op operations.Operation, item gh.Item, filters settings.Filters) error {
+// runSingle runs the specified operations on a single GitHub item.
+func runSingle(c *configuration.Config, op operations.Operation, item gh.Item, filters settings.Filters) error {
 	context := operations.Context{}
 	context.Client = gh.MakeClient(c)
 	context.Username, context.Repository = c.SplitRepository()
@@ -146,26 +182,32 @@ func RunSingle(c *configuration.Config, op operations.Operation, item gh.Item, f
 	return nil
 }
 
-// RunSingleFromConfiguration runs the operations as described by its configuration on a single
-// GitHub item.
-func RunSingleFromConfiguration(c *configuration.Config, operationConfig configuration.OperationConfiguration, item gh.Item) error {
-	// Run the filters first: there's no need to go further if the filters are rejecting the item
-	// anyway.
-	if itemFilters, err := settings.ParseConfigurationFilters(operationConfig.Filters); err != nil {
-		return err
-	} else if !itemFilters.Apply(item) {
-		return nil
-	}
+// runOnEveryItem runs the specified operation on all known items as provided by the specified
+// lister.
+func runOnEveryItem(c *configuration.Config, op operations.Operation, lister Lister, filters settings.Filters) error {
+	context := operations.Context{}
+	context.Client = gh.MakeClient(c)
+	context.Username, context.Repository = c.SplitRepository()
 
-	// Create and execute the operation. Note that we pass an empty set of filters, as we have
-	// already run them before.
-	descriptor, ok := catalog.ByNameIndex[operationConfig.Type]
-	if !ok {
-		return errors.Errorf("unknown operation %q", operationConfig.Type)
+	for page := 1; page != 0; {
+		items, resp, err := lister.ListItems(&context, op, page)
+		if err != nil {
+			return err
+		}
+
+		// Handle each issue, filtering them using the operation first.
+		for _, item := range items {
+			if err := runSingle(c, op, item, filters); err != nil {
+				return err
+			}
+		}
+
+		// Move on to the next page, and respect the specified delay to avoid
+		// hammering the GitHub API.
+		page = resp.NextPage
+		if c.Delay() > 0 {
+			time.Sleep(c.Delay())
+		}
 	}
-	op, err := descriptor.OperationFromConfig(operationConfig.Settings)
-	if err != nil {
-		return err
-	}
-	return RunSingle(c, op, item, settings.Filters{})
+	return nil
 }

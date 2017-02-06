@@ -14,13 +14,16 @@ type Server struct {
 	CommonActions []Action `yaml:"common_configuration"`
 }
 
-// Action is the definition of an action: it descrbibes operations to apply when any of the
+// Action is the definition of an action: it describes operations to apply when any of the
 // associated triggers are met.
 type Action struct {
 	// Triggers is the collection of GitHub events that should trigger the action. The keys must be
 	// valid GitHub event types (e.g., "pull_request"), and the value must be a list of alid values
 	// for the action field of the GitHub paylost (e.g., "created").
 	Triggers Trigger `yaml:"triggers"`
+
+	// Schedule is a cron expression (https://godoc.org/gopkg.in/robfig/cron.v2).
+	Schedule string `yaml:"schedule"`
 
 	// Operations to apply to all repositories when any trigger is met.
 	Operations []OperationConfiguration `yaml:"operations"`

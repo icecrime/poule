@@ -6,7 +6,6 @@ import (
 
 	"poule/configuration"
 	"poule/gh"
-	"poule/runner"
 
 	"github.com/Sirupsen/logrus"
 	nsq "github.com/bitly/go-nsq"
@@ -58,7 +57,7 @@ func (s *Server) handleMessageForItem(m partialMessage, item gh.Item) error {
 	// Gather the list of potential actions for that repository.
 	actions := s.config.CommonActions
 	if repoConfig, ok := s.repositoriesConfig[item.Repository()]; ok {
-		actions = append(actions, repoConfig...)
+		actions = append(actions, repoConfig.Actions...)
 	}
 
 	// Go through the configurations that match this (event, action) couple. In the `Triggers` map,
@@ -66,32 +65,10 @@ func (s *Server) handleMessageForItem(m partialMessage, item gh.Item) error {
 outer_loop:
 	for _, actionConfig := range actions {
 		if actionConfig.Triggers.Contains(m.GitHubEvent, m.Action) {
-			if err := s.executeAction(actionConfig, item); err != nil {
+			if err := executeAction(s.makeExecutionConfig(item.Repository()), actionConfig, item); err != nil {
 				return err
 			}
 			continue outer_loop
-		}
-	}
-	return nil
-}
-
-func (s *Server) executeAction(action configuration.Action, item gh.Item) error {
-	for _, operationConfig := range action.Operations {
-		logrus.WithFields(logrus.Fields{
-			"number":     item.Number(),
-			"operation":  operationConfig.Type,
-			"repository": item.Repository(),
-		}).Info("running operation")
-
-		config := &configuration.Config{
-			RunDelay:   s.config.RunDelay,
-			DryRun:     s.config.DryRun,
-			Token:      s.config.Token,
-			TokenFile:  s.config.TokenFile,
-			Repository: item.Repository(),
-		}
-		if err := runner.RunSingleFromConfiguration(config, operationConfig, item); err != nil {
-			return err
 		}
 	}
 	return nil
