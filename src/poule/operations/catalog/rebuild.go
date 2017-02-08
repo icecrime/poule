@@ -37,7 +37,7 @@ func (d *prRebuildDescriptor) CommandLineDescription() CommandLineDescription {
 				Name:  "configurations",
 				Usage: "configurations to rebuild (empty means all)",
 			},
-			cli.StringSliceFlag{
+			cli.StringFlag{
 				Name:  "label",
 				Usage: "label to search for and remove after rebuild",
 			},

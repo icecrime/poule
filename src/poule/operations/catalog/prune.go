@@ -202,7 +202,7 @@ Thank you!`
 
 func formatWarnComment(issue *github.Issue, o *pruneOperation) string {
 	comment := `%s
-Thank you very much for your help! The issue will be **automatically closed in %s** unless it is commented on.
+This issue will be **automatically closed in %s** unless it is commented on.
 `
 	base := formatPingComment(issue, o)
 	return fmt.Sprintf(comment, base, o.gracePeriod.String())

@@ -10,6 +10,7 @@ import (
 	"poule/operations"
 	"poule/operations/catalog"
 	"poule/operations/settings"
+	"poule/runner"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/ehazlett/simplelog"
@@ -70,7 +71,9 @@ func executeBatchFile(c *cli.Context, file string) error {
 		if err != nil {
 			return err
 		}
-		if err := runSingleOperation(config, op, itemFilters); err != nil {
+		opRunner := runner.NewOperationRunner(config, op)
+		opRunner.GlobalFilters = itemFilters
+		if err := opRunner.HandleStock(); err != nil {
 			logrus.Error(err)
 		}
 	}

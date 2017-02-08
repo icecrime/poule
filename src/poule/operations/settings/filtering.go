@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"poule/gh"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
@@ -56,10 +56,6 @@ type Filters []*Filter
 func (f Filters) Apply(item gh.Item) bool {
 	for _, filter := range f {
 		if !filter.Apply(item) {
-			logrus.WithFields(logrus.Fields{
-				"filter": filter.Strategy.String(),
-				"number": item.Number(),
-			}).Debug("item rejected by filter")
 			return false
 		}
 	}
@@ -105,6 +101,7 @@ type pullRequestFilter interface {
 // MakeFilter creates a filter from a type identifier and a string value.
 func MakeFilter(filterType, value string) (*Filter, error) {
 	typeMapping := map[string]func(string) (*Filter, error){
+		"age":      makeAgeFilter,
 		"assigned": makeAssignedFilter,
 		"comments": makeCommentsFilter,
 		"is":       makeIsFilter,
@@ -115,6 +112,34 @@ func MakeFilter(filterType, value string) (*Filter, error) {
 		return constructor(value)
 	}
 	return nil, errors.Errorf("unknown filter type %q", filterType)
+}
+
+// AgeFilter filters items based on their age.
+type AgeFilter struct {
+	age ExtDuration
+}
+
+func makeAgeFilter(value string) (*Filter, error) {
+	d, err := ParseExtDuration(value)
+	if err != nil {
+		return nil, errors.Errorf("invalid value %q for \"age\" filter", value)
+	}
+	return asFilter(AgeFilter{d}), nil
+}
+
+// ApplyIssue applies the filter to the specified issue.
+func (f AgeFilter) ApplyIssue(issue *github.Issue) bool {
+	return time.Since(*issue.CreatedAt) > f.age.Duration()
+}
+
+// ApplyPullRequest applies the filter to the specified pull request.
+func (f AgeFilter) ApplyPullRequest(pullRequest *github.PullRequest) bool {
+	return time.Since(*pullRequest.CreatedAt) > f.age.Duration()
+}
+
+// String returns a string representation of the filter
+func (f AgeFilter) String() string {
+	return fmt.Sprintf("AgeFilter(%s)", f.age)
 }
 
 // AssignedFilter filters issues based on whether they are assigned or not.
@@ -296,4 +321,24 @@ func filterValue(value interface{}) (string, error) {
 	}
 	// Anything else is an error.
 	return "", errors.Errorf("invalid data type \"%#v\" for filter value", value)
+}
+
+// Mass filtering utilities.
+
+func FilterIncludesIssues(filters []*Filter) bool {
+	for _, filter := range filters {
+		if f, ok := filter.Strategy.(IsFilter); ok && f.PullRequestOnly {
+			return false
+		}
+	}
+	return true
+}
+
+func FilterIncludesPullRequests(filters []*Filter) bool {
+	for _, filter := range filters {
+		if f, ok := filter.Strategy.(IsFilter); ok && !f.PullRequestOnly {
+			return false
+		}
+	}
+	return true
 }
