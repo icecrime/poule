@@ -80,8 +80,10 @@ func makeGitHubItems(c *configuration.Config, event string, data []byte) ([]gh.I
 		return makeItemsFromIssueEvent(c, data)
 	case "pull_request", "pull_request_review", "pull_request_review_comment":
 		return makeItemsFromPullRequestEvent(c, data)
-	case "status":
-		return makeItemsFromStatusEvent(c, data)
+	// Handling of the "status" event is temporarily disabled: we don't have a use case for it yet
+	// and it's extremely consuming in terms of API limits.
+	//case "status":
+	//	return makeItemsFromStatusEvent(c, data)
 	default:
 		return nil, nil
 	}
