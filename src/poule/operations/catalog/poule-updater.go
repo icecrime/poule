@@ -1,8 +1,12 @@
 package catalog
 
 import (
-	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
+
+	yaml "gopkg.in/yaml.v2"
 
 	"poule/configuration"
 	"poule/gh"
@@ -10,7 +14,13 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
+)
+
+const (
+	pouleValidationCommentToken = "AUTOMATED:POULE:POULE-VALIDATION"
+	pouleValidationContext      = "poule-validation"
 )
 
 // PouleUpdateCallback is the callback to call when a configuration update is required.
@@ -43,26 +53,36 @@ func (d *pouleUpdaterDescriptor) OperationFromConfig(c operations.Configuration)
 
 type pouleUpdaterOperation struct{}
 
+type pouleUpdaterUserData struct {
+	Merged bool
+	URL    string
+}
+
 func (o *pouleUpdaterOperation) Accepts() operations.AcceptedType {
 	return operations.PullRequests
 }
 
 func (o *pouleUpdaterOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
-	if PouleUpdateCallback == nil {
-		return errors.New("poule configuration update callback is nil")
+	if ud := userData.(pouleUpdaterUserData); ud.Merged {
+		return updatePouleConfiguration(item.Repository())
+	} else {
+		return validatePouleConfiguration(c, item, ud)
 	}
-	return PouleUpdateCallback(item.Repository())
 }
 
 func (o *pouleUpdaterOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {
-	return fmt.Sprintf("updating configuration")
+	if ud := userData.(pouleUpdaterUserData); ud.Merged {
+		return fmt.Sprintf("updating from merged configuration")
+	}
+	return fmt.Sprintf("validating unmerged configuration")
 }
 
 func (o *pouleUpdaterOperation) Filter(c *operations.Context, item gh.Item) (operations.FilterResult, interface{}, error) {
-	// We're looking for merge pull request which modify the poule configuration.
+	// Exclude closed and unmerged pull requests.
 	pr := item.PullRequest
-	if pr.Merged != nil && *pr.Merged == false {
-		logrus.Debug("rejecting unmerged pull request")
+	isMerged := pr.Merged != nil && *pr.Merged
+	if *pr.State != "open" && !isMerged {
+		logrus.Debugf("rejecting unnmerged pull request")
 		return operations.Reject, nil, nil
 	}
 
@@ -73,7 +93,11 @@ func (o *pouleUpdaterOperation) Filter(c *operations.Context, item gh.Item) (ope
 	}
 	for _, commitFile := range commitFiles {
 		if *commitFile.Filename == configuration.PouleConfigurationFile {
-			return operations.Accept, nil, nil
+			userData := pouleUpdaterUserData{
+				Merged: isMerged,
+				URL:    *commitFile.RawURL,
+			}
+			return operations.Accept, userData, nil
 		}
 	}
 	return operations.Reject, nil, nil
@@ -85,4 +109,84 @@ func (o *pouleUpdaterOperation) IssueListOptions(c *operations.Context) *github.
 
 func (o *pouleUpdaterOperation) PullRequestListOptions(c *operations.Context) *github.PullRequestListOptions {
 	return nil
+}
+
+func updatePouleConfiguration(repository string) error {
+	if PouleUpdateCallback == nil {
+		return errors.New("poule configuration update callback is nil")
+	}
+	return PouleUpdateCallback(repository)
+}
+
+func validatePouleConfiguration(c *operations.Context, item gh.Item, userData pouleUpdaterUserData) error {
+	resp, err := http.Get(userData.URL)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("error retrieving file %q (%s)", userData.URL, resp.Status)
+	}
+	content, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var actions configuration.Actions
+	if err := yaml.Unmarshal(content, &actions); err != nil {
+		return applyInvalidPouleConfiguration(c, item, userData, []error{err})
+	} else if errs := actions.Validate(OperationValidator{}); len(errs) != 0 {
+		return applyInvalidPouleConfiguration(c, item, userData, errs)
+	}
+	return applyValidPouleConfiguration(c, item, userData)
+}
+
+func applyInvalidPouleConfiguration(c *operations.Context, item gh.Item, userData pouleUpdaterUserData, errs []error) error {
+	// Create the automated comment for that pull request, unless there is already one.
+	pr := item.PullRequest
+	if automatedComments, err := findAutomatedComments(c, pr, pouleValidationCommentToken); err != nil {
+		return err
+	} else if len(automatedComments) != 0 {
+		return nil
+	}
+
+	// Create the automated comment.
+	content := formatValidationComment(c, pr, errs)
+	comment := &github.IssueComment{Body: &content}
+	if _, _, err := c.Client.Issues().CreateComment(c.Username, c.Repository, *pr.Number, comment); err != nil {
+		return err
+	}
+
+	_, _, err := c.Client.Repositories().CreateStatus(c.Username, c.Repository, *pr.Head.SHA, &github.RepoStatus{
+		Context:     github.String(pouleValidationContext),
+		Description: github.String("Poule configuration is invalid"),
+		State:       github.String("failure"),
+	})
+	return err
+}
+
+func applyValidPouleConfiguration(c *operations.Context, item gh.Item, userData pouleUpdaterUserData) error {
+	// Delete the automated validation comment (if any).
+	pr := item.PullRequest
+	if err := deleteAutomatedComments(c, pr, pouleValidationCommentToken); err != nil {
+		return err
+	}
+
+	_, _, err := c.Client.Repositories().CreateStatus(c.Username, c.Repository, *pr.Head.SHA, &github.RepoStatus{
+		Context:     github.String(pouleValidationContext),
+		Description: github.String("Poule configuration is valid"),
+		State:       github.String("success"),
+	})
+	return err
+}
+
+func formatValidationComment(c *operations.Context, pr *github.PullRequest, errs []error) string {
+	var strErrors []string
+	for _, err := range errs {
+		strErrors = append(strErrors, err.Error())
+	}
+
+	comment := fmt.Sprintf("<!-- %s -->\n", pouleValidationCommentToken)
+	comment += fmt.Sprintf(":chicken: Validation failed:\n```\n%s\n```\n", strings.Join(strErrors, "\n"))
+	return comment
 }

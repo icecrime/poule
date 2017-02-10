@@ -76,12 +76,22 @@ func (s *Server) Run() {
 
 // FetchRepositoriesConfigs retrieves the repository specific configurations from GitHub.
 func (s *Server) FetchRepositoriesConfigs() error {
-	for repository := range s.config.Repositories {
-		if err := s.refreshRepositoryConfiguration(repository); err != nil {
-			logrus.Warnf(err.Error())
-			continue
+	/*
+		for repository := range s.config.Repositories {
+			if err := s.refreshRepositoryConfiguration(repository); err != nil {
+				logrus.Warnf(err.Error())
+				continue
+			}
 		}
-	}
+		return nil
+	*/
+	/*
+		config, err := ioutil.ReadFile("/home/icecrime/go/src/github.com/docker/docker/poule.yml")
+		if err != nil {
+			return err
+		}
+		return s.updateRepositoryConfiguration("docker", config)
+	*/
 	return nil
 }
 

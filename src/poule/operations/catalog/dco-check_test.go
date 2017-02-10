@@ -123,12 +123,16 @@ func TestDCOSuccess(t *testing.T) {
 		On("ListCommits", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.ListOptions")).
 		Return([]*github.RepositoryCommit{
 			{
-				SHA:     github.String(test.CommitSHA[0]),
-				Message: github.String("This is signed.\nSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
+				SHA: github.String(test.CommitSHA[0]),
+				Commit: &github.Commit{
+					Message: github.String("This is signed.\nSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
+				},
 			},
 			{
-				SHA:     github.String(test.CommitSHA[1]),
-				Message: github.String("This too.\n\tSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>  \nYep.\n"),
+				SHA: github.String(test.CommitSHA[1]),
+				Commit: &github.Commit{
+					Message: github.String("This too.\n\tSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>  \nYep.\n"),
+				},
 			},
 		}, nil, nil)
 
@@ -191,8 +195,10 @@ func TestDCOSuccessLabelMissing(t *testing.T) {
 		On("ListCommits", ctx.Username, ctx.Repository, test.IssueNumber, mock.AnythingOfType("*github.ListOptions")).
 		Return([]*github.RepositoryCommit{
 			{
-				SHA:     github.String(test.CommitSHA[0]),
-				Message: github.String("This is signed.\nSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
+				SHA: github.String(test.CommitSHA[0]),
+				Commit: &github.Commit{
+					Message: github.String("This is signed.\nSigned-off-by: Arnaud Porterie (icecrime) <arnaud.porterie@docker.com>"),
+				},
 			},
 		}, nil, nil)
 

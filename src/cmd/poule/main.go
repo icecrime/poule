@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
+	"time"
 
 	"poule/operations/catalog"
 	"poule/operations/settings"
@@ -13,6 +15,8 @@ import (
 )
 
 func main() {
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	app := cli.NewApp()
 	app.Name = "poule"
 	app.Usage = "Mass interact with GitHub issues & pull requests"
