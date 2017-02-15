@@ -20,7 +20,9 @@ func executeAction(config *configuration.Config, action configuration.Action, it
 		if err != nil {
 			return err
 		}
-		return opRunner.Handle(item)
+		if err := opRunner.Handle(item); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -35,7 +37,9 @@ func executeActionOnAllItems(config *configuration.Config, action configuration.
 		if err != nil {
 			return err
 		}
-		return opRunner.HandleStock()
+		if err := opRunner.HandleStock(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
