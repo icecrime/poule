@@ -94,6 +94,10 @@ func labelFromVersion(version, suffix string) string {
 		fallthrough
 	case strings.HasPrefix(suffix, "rc"):
 		fallthrough
+	case strings.HasPrefix(suffix, "ce"):
+		fallthrough
+	case strings.HasPrefix(suffix, "ee"):
+		fallthrough
 	case suffix == "":
 		return "version/" + version[0:strings.LastIndex(version, ".")]
 	// The default for unknown suffix is to consider the version unsupported.
