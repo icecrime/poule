@@ -25,6 +25,8 @@ func TestVersionLabel(t *testing.T) {
 		"version/1.13":        "Server: Version: 1.13.1-rc1",
 		"version/1.14":        "Server: Version: 1.14.1-cs2",
 		"version/1.15":        "Server: Version: 1.15.3pouet",
+		"version/17.03":       "Server: Version: 17.03.0-ce",
+		"version/17.04":       "Server: Version: 17.04.0-ce-rc1",
 		"version/master":      "Server: Version: 1.2.3-dev",
 		"version/unsupported": "Server: Version: 1.2.3-toto",
 	} {
