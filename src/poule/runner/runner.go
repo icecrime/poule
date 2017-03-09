@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// OperationRunner is responsible for executing the Operation.
 type OperationRunner struct {
 	// Config is the global settings for execution.
 	Config *configuration.Config
@@ -65,7 +66,7 @@ func (r *OperationRunner) Handle(item gh.Item) error {
 	return runSingle(r.Config, r.Operation, item, r.GlobalFilters)
 }
 
-// Handle applies the operation to the entire stock of GitHub items.
+// HandleStock applies the operation to the entire stock of GitHub items.
 func (r *OperationRunner) HandleStock() error {
 	if settings.FilterIncludesIssues(r.GlobalFilters) && r.Operation.Accepts()&operations.Issues == operations.Issues {
 		if err := runOnEveryItem(r.Config, r.Operation, &IssueLister{}, r.GlobalFilters); err != nil {

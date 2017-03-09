@@ -8,8 +8,8 @@ import (
 	"github.com/google/go-github/github"
 )
 
-// TestClient is a mocked implementation of a GitHub client.
-type TestClient struct {
+// Client is a mocked implementation of a GitHub client.
+type Client struct {
 	MockIssues       mocks.IssuesService
 	MockPullRequests mocks.PullRequestsService
 	MockRepositories mocks.RepositoriesService
@@ -17,22 +17,22 @@ type TestClient struct {
 }
 
 // Issues returns the issue service instance.
-func (t *TestClient) Issues() gh.IssuesService {
+func (t *Client) Issues() gh.IssuesService {
 	return &t.MockIssues
 }
 
 // PullRequests returns the pull request service instance.
-func (t *TestClient) PullRequests() gh.PullRequestsService {
+func (t *Client) PullRequests() gh.PullRequestsService {
 	return &t.MockPullRequests
 }
 
 // Repositories returns the repository service instance.
-func (t *TestClient) Repositories() gh.RepositoriesService {
+func (t *Client) Repositories() gh.RepositoriesService {
 	return &t.MockRepositories
 }
 
 // Search returns the search service instance.
-func (t *TestClient) Search() gh.SearchService {
+func (t *Client) Search() gh.SearchService {
 	return &t.MockSearch
 }
 
