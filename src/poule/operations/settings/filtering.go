@@ -2,12 +2,15 @@ package settings
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"poule/gh"
+	"poule/operations"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
@@ -53,9 +56,9 @@ func ParseConfigurationFilters(values map[string]interface{}) (Filters, error) {
 type Filters []*Filter
 
 // Apply returns true only if all filters accept the item.
-func (f Filters) Apply(item gh.Item) bool {
+func (f Filters) Apply(context operations.Context, item gh.Item) bool {
 	for _, filter := range f {
-		if !filter.Apply(item) {
+		if !filter.Apply(context, item) {
 			return false
 		}
 	}
@@ -69,15 +72,15 @@ type Filter struct {
 
 // Apply returns whether the internal strategy is accepting or rejecting the
 // specified GitHub item.
-func (f *Filter) Apply(item gh.Item) bool {
+func (f *Filter) Apply(context operations.Context, item gh.Item) bool {
 	switch {
 	case item.IsIssue():
 		if f, ok := f.Strategy.(issueFilter); ok {
-			return f.ApplyIssue(item.Issue)
+			return f.ApplyIssue(context, item.Issue)
 		}
 	case item.IsPullRequest():
 		if f, ok := f.Strategy.(pullRequestFilter); ok {
-			return f.ApplyPullRequest(item.PullRequest)
+			return f.ApplyPullRequest(context, item.PullRequest)
 		}
 	default:
 		panic("unreachable")
@@ -87,14 +90,14 @@ func (f *Filter) Apply(item gh.Item) bool {
 
 // issueFilter is a filtering strategy that applies to GitHub issues.
 type issueFilter interface {
-	ApplyIssue(*github.Issue) bool
+	ApplyIssue(operations.Context, *github.Issue) bool
 	String() string
 }
 
 // pullRequestFilter is a filtering strategy that applies to GitHub pull
 // requests.
 type pullRequestFilter interface {
-	ApplyPullRequest(*github.PullRequest) bool
+	ApplyPullRequest(operations.Context, *github.PullRequest) bool
 	String() string
 }
 
@@ -107,11 +110,60 @@ func MakeFilter(filterType, value string) (*Filter, error) {
 		"is":       makeIsFilter,
 		"labels":   makeWithLabelsFilter,
 		"~labels":  makeWithoutLabelsFilter,
+		"contains": makeContainsFilter,
 	}
 	if constructor, ok := typeMapping[filterType]; ok {
 		return constructor(value)
 	}
 	return nil, errors.Errorf("unknown filter type %q", filterType)
+}
+
+// ContainsFilter implements a filter for regexps that checks comments.
+type ContainsFilter struct {
+	regexp *regexp.Regexp
+}
+
+func makeContainsFilter(value string) (*Filter, error) {
+	regex, err := regexp.Compile(value)
+	if err != nil {
+		return nil, err
+	}
+
+	return asFilter(ContainsFilter{regexp: regex}), nil
+}
+
+func (f ContainsFilter) filter(context operations.Context, issueNum int) bool {
+	comments, _, err := context.Client.Issues().ListComments(context.Username, context.Repository, issueNum, nil)
+	if err != nil {
+		logrus.Error(err)
+		return false
+	}
+
+	for _, comment := range comments {
+		// Remove CRs from the CRLF line endings. \r should never be deliberately
+		// in a github comment, I hope at least.
+		body := strings.Replace(*comment.Body, "\r", "", -1)
+		if f.regexp.MatchString(body) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// ApplyIssue applies the filter to the specified issue.
+func (f ContainsFilter) ApplyIssue(context operations.Context, issue *github.Issue) bool {
+	return f.filter(context, *(issue.Number))
+}
+
+// ApplyPullRequest applies the filter to the specified pull request.
+func (f ContainsFilter) ApplyPullRequest(context operations.Context, pullRequest *github.PullRequest) bool {
+	return f.filter(context, *(pullRequest.Number))
+}
+
+// String returns a string representation of the filter
+func (f ContainsFilter) String() string {
+	return fmt.Sprintf("ContainsFilter(%s)", f.regexp)
 }
 
 // AgeFilter filters items based on their age.
@@ -128,12 +180,12 @@ func makeAgeFilter(value string) (*Filter, error) {
 }
 
 // ApplyIssue applies the filter to the specified issue.
-func (f AgeFilter) ApplyIssue(issue *github.Issue) bool {
+func (f AgeFilter) ApplyIssue(context operations.Context, issue *github.Issue) bool {
 	return time.Since(*issue.CreatedAt) > f.age.Duration()
 }
 
 // ApplyPullRequest applies the filter to the specified pull request.
-func (f AgeFilter) ApplyPullRequest(pullRequest *github.PullRequest) bool {
+func (f AgeFilter) ApplyPullRequest(context operations.Context, pullRequest *github.PullRequest) bool {
 	return time.Since(*pullRequest.CreatedAt) > f.age.Duration()
 }
 
@@ -156,7 +208,7 @@ func makeAssignedFilter(value string) (*Filter, error) {
 }
 
 // ApplyIssue applies the filter to the specified issue.
-func (f AssignedFilter) ApplyIssue(issue *github.Issue) bool {
+func (f AssignedFilter) ApplyIssue(context operations.Context, issue *github.Issue) bool {
 	return f.isAssigned == (issue.Assignee != nil)
 }
 
@@ -199,7 +251,7 @@ func makeCommentsFilter(value string) (*Filter, error) {
 }
 
 // ApplyIssue applies the filter to the specified issue.
-func (f CommentsFilter) ApplyIssue(issue *github.Issue) bool {
+func (f CommentsFilter) ApplyIssue(context operations.Context, issue *github.Issue) bool {
 	return f.predicate(*issue.Comments)
 }
 
@@ -209,7 +261,7 @@ func (f CommentsFilter) String() string {
 }
 
 // ApplyPullRequest applies the filter to the specified pull request.
-func (f CommentsFilter) ApplyPullRequest(pullRequest *github.PullRequest) bool {
+func (f CommentsFilter) ApplyPullRequest(context operations.Context, pullRequest *github.PullRequest) bool {
 	return f.predicate(*pullRequest.Comments)
 }
 
@@ -230,14 +282,14 @@ func makeIsFilter(value string) (*Filter, error) {
 }
 
 // ApplyIssue applies the filter to the specified issue.
-func (f IsFilter) ApplyIssue(issue *github.Issue) bool {
+func (f IsFilter) ApplyIssue(context operations.Context, issue *github.Issue) bool {
 	// We're called on an issue: filter passes unless configured to accept pull
 	// requests, and if the issue isn't really a pull request.
 	return !f.PullRequestOnly && (issue.PullRequestLinks == nil)
 }
 
 // ApplyPullRequest applies the filter to the specified pull request.
-func (f IsFilter) ApplyPullRequest(pullRequest *github.PullRequest) bool {
+func (f IsFilter) ApplyPullRequest(context operations.Context, pullRequest *github.PullRequest) bool {
 	// We're called on a pull request: filter passes if configured to accept
 	// pull requests.
 	return f.PullRequestOnly
@@ -260,7 +312,7 @@ func makeWithLabelsFilter(value string) (*Filter, error) {
 }
 
 // ApplyIssue applies the filter to the specified issue.
-func (f WithLabelsFilter) ApplyIssue(issue *github.Issue) bool {
+func (f WithLabelsFilter) ApplyIssue(context operations.Context, issue *github.Issue) bool {
 	return gh.HasAllLabels(f.labels, issue.Labels)
 }
 
@@ -281,7 +333,7 @@ func makeWithoutLabelsFilter(value string) (*Filter, error) {
 }
 
 // ApplyIssue applies the filter to the specified issue.
-func (f WithoutLabelsFilter) ApplyIssue(issue *github.Issue) bool {
+func (f WithoutLabelsFilter) ApplyIssue(context operations.Context, issue *github.Issue) bool {
 	return !gh.HasAnyLabels(f.labels, issue.Labels)
 }
 
