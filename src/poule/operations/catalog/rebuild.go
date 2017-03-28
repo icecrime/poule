@@ -190,7 +190,7 @@ func rebuildPR(pr *github.PullRequest, context string) (err error) {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", configuration.JenkinsBaseUrl, bytes.NewBuffer(data))
+	req, err := http.NewRequest("POST", configuration.JenkinsBaseURL, bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
@@ -205,7 +205,7 @@ func rebuildPR(pr *github.PullRequest, context string) (err error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 204 {
-		return errors.Errorf("requesting %s for PR %d for %s returned status code: %d: make sure the repo allows builds.", configuration.JenkinsBaseUrl, *pr.Number, *pr.Base.Repo.FullName, resp.StatusCode)
+		return errors.Errorf("requesting %s for PR %d for %s returned status code: %d: make sure the repo allows builds.", configuration.JenkinsBaseURL, *pr.Number, *pr.Base.Repo.FullName, resp.StatusCode)
 	}
 	return nil
 }

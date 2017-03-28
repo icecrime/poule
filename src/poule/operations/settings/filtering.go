@@ -325,6 +325,8 @@ func filterValue(value interface{}) (string, error) {
 
 // Mass filtering utilities.
 
+// FilterIncludesIssues is a predicate to determine whether or not a set of
+// filters should include issues.
 func FilterIncludesIssues(filters []*Filter) bool {
 	for _, filter := range filters {
 		if f, ok := filter.Strategy.(IsFilter); ok && f.PullRequestOnly {
@@ -334,6 +336,8 @@ func FilterIncludesIssues(filters []*Filter) bool {
 	return true
 }
 
+// FilterIncludesPullRequests is similar to FilterIncludesIssues only with
+// respect to pull requests.
 func FilterIncludesPullRequests(filters []*Filter) bool {
 	for _, filter := range filters {
 		if f, ok := filter.Strategy.(IsFilter); ok && !f.PullRequestOnly {

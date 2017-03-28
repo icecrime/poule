@@ -1,8 +1,8 @@
 package configuration
 
 const (
-	// JenkinsBaseUrl is the base URL for the Jenkins CI server.
-	JenkinsBaseUrl = "https://leeroy.dockerproject.org/build/retry"
+	// JenkinsBaseURL is the base URL for the Jenkins CI server.
+	JenkinsBaseURL = "https://leeroy.dockerproject.org/build/retry"
 
 	// FailingCILabel is the label that indicates that a pull request is
 	// failing for a legitimate reason and should be ignored.
