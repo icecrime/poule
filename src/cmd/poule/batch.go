@@ -50,6 +50,9 @@ func executeBatchFile(c *cli.Context, file string) error {
 	if err := yaml.Unmarshal(b, &batchConfig); err != nil {
 		return err
 	}
+	if err := batchConfig.Validate(); err != nil {
+		return err
+	}
 
 	// Read the global configuration flags, and override them with the
 	// specialized flags defined in the configuration file.
@@ -93,8 +96,8 @@ func (d *duration) UnmarshalText(text []byte) error {
 }
 
 type batchConfiguration struct {
-	configuration.Config
-	Operations []operationConfiguration `yaml:"operations"`
+	configuration.Config `yaml:",inline"`
+	Operations           []operationConfiguration `yaml:"operations"`
 }
 
 type operationConfiguration struct {
