@@ -9,8 +9,8 @@ import (
 	"github.com/google/go-github/github"
 )
 
-func makeContext() (*test.TestClient, *operations.Context) {
-	clt := &test.TestClient{}
+func makeContext() (*test.Client, *operations.Context) {
+	clt := &test.Client{}
 	return clt, &operations.Context{
 		Client:     clt,
 		Username:   test.Username,

@@ -63,11 +63,11 @@ func (o *pouleUpdaterOperation) Accepts() operations.AcceptedType {
 }
 
 func (o *pouleUpdaterOperation) Apply(c *operations.Context, item gh.Item, userData interface{}) error {
-	if ud := userData.(pouleUpdaterUserData); ud.Merged {
+	ud := userData.(pouleUpdaterUserData)
+	if ud.Merged {
 		return updatePouleConfiguration(item.Repository())
-	} else {
-		return validatePouleConfiguration(c, item, ud)
 	}
+	return validatePouleConfiguration(c, item, ud)
 }
 
 func (o *pouleUpdaterOperation) Describe(c *operations.Context, item gh.Item, userData interface{}) string {

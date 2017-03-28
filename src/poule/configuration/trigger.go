@@ -20,7 +20,7 @@ func (t Trigger) Contains(githubEvent, githubAction string) bool {
 // Validate verifies the validity of the trigger definition.
 func (t Trigger) Validate() error {
 	var invalidEvents []string
-	for event, _ := range t {
+	for event := range t {
 		if !StringSlice(GitHubEvents).Contains(event) {
 			invalidEvents = append(invalidEvents, fmt.Sprintf("%q", event))
 		}
