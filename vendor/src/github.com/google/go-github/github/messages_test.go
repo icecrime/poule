@@ -125,6 +125,10 @@ func TestParseWebHook(t *testing.T) {
 			messageType: "issues",
 		},
 		{
+			payload:     &LabelEvent{},
+			messageType: "label",
+		},
+		{
 			payload:     &MemberEvent{},
 			messageType: "member",
 		},
@@ -133,8 +137,20 @@ func TestParseWebHook(t *testing.T) {
 			messageType: "membership",
 		},
 		{
+			payload:     &MilestoneEvent{},
+			messageType: "milestone",
+		},
+		{
+			payload:     &OrganizationEvent{},
+			messageType: "organization",
+		},
+		{
 			payload:     &PageBuildEvent{},
 			messageType: "page_build",
+		},
+		{
+			payload:     &PingEvent{},
+			messageType: "ping",
 		},
 		{
 			payload:     &PublicEvent{},
@@ -143,6 +159,10 @@ func TestParseWebHook(t *testing.T) {
 		{
 			payload:     &PullRequestEvent{},
 			messageType: "pull_request",
+		},
+		{
+			payload:     &PullRequestReviewEvent{},
+			messageType: "pull_request_review",
 		},
 		{
 			payload:     &PullRequestReviewCommentEvent{},

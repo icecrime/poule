@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strings"
 
 	"poule/configuration"
+	"poule/operations/catalog"
 
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -32,13 +35,19 @@ var validateCommand = cli.Command{
 func validateServerConfig(cfgPath string) (*configuration.Server, error) {
 	b, err := ioutil.ReadFile(cfgPath)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read file %q: %v", cfgPath, err)
+		return nil, errors.Wrapf(err, "Failed to read server configuration")
 	}
 
 	// Read the YAML configuration file identified by the argument.
 	serveConfig := configuration.Server{}
 	if err := yaml.Unmarshal(b, &serveConfig); err != nil {
-		return nil, fmt.Errorf("Failed to read config file %q: %v", cfgPath, err)
+		return nil, errors.Wrapf(err, "Malformed server configuration %q", cfgPath)
+	} else if errs := serveConfig.Validate(catalog.OperationValidator{}); len(errs) != 0 {
+		var strErrors []string
+		for _, err := range errs {
+			strErrors = append(strErrors, err.Error())
+		}
+		return nil, fmt.Errorf("Invalid server configuration:\n%s\n", strings.Join(strErrors, "\n"))
 	}
 
 	return &serveConfig, nil
@@ -47,12 +56,18 @@ func validateServerConfig(cfgPath string) (*configuration.Server, error) {
 func validateRepositoryConfig(cfgPath string) ([]configuration.Action, error) {
 	b, err := ioutil.ReadFile(cfgPath)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read file %q: %v", cfgPath, err)
+		return nil, errors.Wrapf(err, "Failed to read repository configuration")
 	}
 
-	var repoConfig []configuration.Action
+	var repoConfig configuration.Actions
 	if err := yaml.Unmarshal(b, &repoConfig); err != nil {
-		return nil, fmt.Errorf("failed to read repository configuration file: %v", err)
+		return nil, errors.Wrapf(err, "Malformed repository configuration %q", cfgPath)
+	} else if errs := repoConfig.Validate(catalog.OperationValidator{}); len(errs) != 0 {
+		var strErrors []string
+		for _, err := range errs {
+			strErrors = append(strErrors, err.Error())
+		}
+		return nil, fmt.Errorf("Invalid repository configuration:\n%s\n", strings.Join(strErrors, "\n"))
 	}
 
 	return repoConfig, nil

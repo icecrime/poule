@@ -27,6 +27,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/google/go-github",
+			"repository": "https://github.com/google/go-github",
+			"revision": "27c7c32b6d369610435bd2ad7b4d8554f235eb01",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/google/go-github/github",
 			"repository": "https://github.com/google/go-github",
 			"revision": "54943985871d3b59053804af48b8347a3c232938",
@@ -82,6 +88,13 @@
 			"repository": "https://github.com/urfave/cli",
 			"revision": "df95e0708f6416a3f148c984464cfd417e9eccfe",
 			"branch": "master"
+		},
+		{
+			"importpath": "golang.org/x/crypto/ssh/terminal",
+			"repository": "https://go.googlesource.com/crypto",
+			"revision": "92783773f0d5c65e68a806909423bea53c78df01",
+			"branch": "master",
+			"path": "/ssh/terminal"
 		},
 		{
 			"importpath": "golang.org/x/net/context",

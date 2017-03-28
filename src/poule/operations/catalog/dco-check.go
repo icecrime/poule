@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
-	"strings"
 
 	"poule/gh"
 	"poule/operations"
@@ -15,14 +14,14 @@ import (
 	"github.com/urfave/cli"
 )
 
-var (
-	dcoContext      = "dco-signed"
-	dcoCommentToken = "AUTOMATED:POULE:DCO-EXPLANATION"
-	dcoRegex        = regexp.MustCompile("(?m)(Docker-DCO-1.1-)?Signed-off-by: ([^<]+) <([^<>@]+@[^<>]+)>( \\(github: ([a-zA-Z0-9][a-zA-Z0-9-]+)\\))?")
-	dcoURL          = "https://github.com/docker/docker/blob/master/CONTRIBUTING.md#sign-your-work"
-
+const (
+	dcoContext           = "dco-signed"
+	dcoCommentToken      = "AUTOMATED:POULE:DCO-EXPLANATION"
+	dcoURL               = "https://github.com/docker/docker/blob/master/CONTRIBUTING.md#sign-your-work"
 	defaultUnsignedLabel = "dco/no"
 )
+
+var dcoRegex = regexp.MustCompile("(?m)(Docker-DCO-1.1-)?Signed-off-by: ([^<]+) <([^<>@]+@[^<>]+)>( \\(github: ([a-zA-Z0-9][a-zA-Z0-9-]+)\\))?")
 
 func init() {
 	registerOperation(&dcoCheckDescriptor{})
@@ -86,18 +85,12 @@ func (o *dcoCheckOperation) applySigned(c *operations.Context, pr *github.PullRe
 	}
 
 	// Delete the automated DCO comment (if any).
-	automatedComments, err := findDCOComments(c, pr)
-	if err != nil {
+	if err := deleteAutomatedComments(c, pr, pouleValidationCommentToken); err != nil {
 		return err
-	}
-	for _, comment := range automatedComments {
-		if _, err := c.Client.Issues().DeleteComment(c.Username, c.Repository, *comment.ID); err != nil {
-			return err
-		}
 	}
 
 	// Set the status as successful.
-	_, _, err = c.Client.Repositories().CreateStatus(c.Username, c.Repository, *pr.Head.SHA, &github.RepoStatus{
+	_, _, err := c.Client.Repositories().CreateStatus(c.Username, c.Repository, *pr.Head.SHA, &github.RepoStatus{
 		Context:     github.String(dcoContext),
 		Description: github.String("All commits are signed"),
 		State:       github.String("success"),
@@ -111,9 +104,8 @@ func (o *dcoCheckOperation) applyUnsigned(c *operations.Context, pr *github.Pull
 		return err
 	}
 
-	// Create the automated comment for that pull request, unless there is
-	// already one.
-	if automatedComments, err := findDCOComments(c, pr); err != nil {
+	// Create the automated comment for that pull request, unless there is already one.
+	if automatedComments, err := findAutomatedComments(c, pr, dcoCommentToken); err != nil {
 		return err
 	} else if len(automatedComments) != 0 {
 		return nil
@@ -178,37 +170,6 @@ func (o *dcoCheckOperation) PullRequestListOptions(c *operations.Context) *githu
 			PerPage: 200,
 		},
 	}
-}
-
-func findDCOComments(c *operations.Context, pr *github.PullRequest) ([]*github.IssueComment, error) {
-	automatedComments := []*github.IssueComment{}
-	issuesListOptions := &github.IssueListCommentsOptions{
-		Sort:      "created",
-		Direction: "desc",
-		ListOptions: github.ListOptions{
-			PerPage: 200,
-		},
-	}
-
-	// Retrieve all comments for that pull request.
-	for page := 1; page != 0; {
-		issuesListOptions.ListOptions.Page = page
-		comments, resp, err := c.Client.Issues().ListComments(c.Username, c.Repository, *pr.Number, issuesListOptions)
-		if err != nil {
-			return nil, err
-		}
-
-		// Go through the comments looking for the automated token.
-		for i := range comments {
-			comment := comments[i]
-			if comment.Body != nil && strings.Contains(*comment.Body, dcoCommentToken) {
-				automatedComments = append(automatedComments, comment)
-			}
-		}
-
-		page = resp.NextPage
-	}
-	return automatedComments, nil
 }
 
 func formatDCOComment(c *operations.Context, pr *github.PullRequest) string {

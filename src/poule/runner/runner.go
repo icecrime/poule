@@ -44,11 +44,7 @@ func NewOperationRunnerFromConfig(config *configuration.Config, operationConfig 
 	}
 
 	// Create the operation.
-	descriptor, ok := catalog.ByNameIndex[operationConfig.Type]
-	if !ok {
-		return nil, errors.Errorf("unknown operation %q", operationConfig.Type)
-	}
-	operation, err := descriptor.OperationFromConfig(operationConfig.Settings)
+	operation, err := catalog.OperationFromConfig(operationConfig)
 	if err != nil {
 		return nil, err
 	}

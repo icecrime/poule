@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -225,9 +226,10 @@ func TestRepositoriesService_Get(t *testing.T) {
 	setup()
 	defer teardown()
 
+	acceptHeader := []string{mediaTypeLicensesPreview, mediaTypeSquashPreview}
 	mux.HandleFunc("/repos/o/r", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
-		testHeader(t, r, "Accept", mediaTypeLicensesPreview)
+		testHeader(t, r, "Accept", strings.Join(acceptHeader, ", "))
 		fmt.Fprint(w, `{"id":1,"name":"n","description":"d","owner":{"login":"l"},"license":{"key":"mit"}}`)
 	})
 
@@ -432,7 +434,7 @@ func TestRepositoriesService_ListBranches(t *testing.T) {
 		t.Errorf("Repositories.ListBranches returned error: %v", err)
 	}
 
-	want := []*Branch{{Name: String("master"), Commit: &Commit{SHA: String("a57781"), URL: String("https://api.github.com/repos/o/r/commits/a57781")}}}
+	want := []*Branch{{Name: String("master"), Commit: &RepositoryCommit{SHA: String("a57781"), URL: String("https://api.github.com/repos/o/r/commits/a57781")}}}
 	if !reflect.DeepEqual(branches, want) {
 		t.Errorf("Repositories.ListBranches returned %+v, want %+v", branches, want)
 	}
@@ -445,7 +447,7 @@ func TestRepositoriesService_GetBranch(t *testing.T) {
 	mux.HandleFunc("/repos/o/r/branches/b", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
 		testHeader(t, r, "Accept", mediaTypeProtectedBranchesPreview)
-		fmt.Fprint(w, `{"name":"n", "commit":{"sha":"s"}, "protection": {"enabled": true, "required_status_checks": {"enforcement_level": "everyone","contexts": []}}}`)
+		fmt.Fprint(w, `{"name":"n", "commit":{"sha":"s","commit":{"message":"m"}}, "protected":true}`)
 	})
 
 	branch, _, err := client.Repositories.GetBranch("o", "r", "b")
@@ -454,15 +456,14 @@ func TestRepositoriesService_GetBranch(t *testing.T) {
 	}
 
 	want := &Branch{
-		Name:   String("n"),
-		Commit: &Commit{SHA: String("s")},
-		Protection: &Protection{
-			Enabled: Bool(true),
-			RequiredStatusChecks: &RequiredStatusChecks{
-				EnforcementLevel: String("everyone"),
-				Contexts:         &[]string{},
+		Name: String("n"),
+		Commit: &RepositoryCommit{
+			SHA: String("s"),
+			Commit: &Commit{
+				Message: String("m"),
 			},
 		},
+		Protected: Bool(true),
 	}
 
 	if !reflect.DeepEqual(branch, want) {
@@ -470,39 +471,119 @@ func TestRepositoriesService_GetBranch(t *testing.T) {
 	}
 }
 
-func TestRepositoriesService_EditBranch(t *testing.T) {
+func TestRepositoriesService_GetBranchProtection(t *testing.T) {
 	setup()
 	defer teardown()
 
-	input := &Branch{
-		Protection: &Protection{
-			Enabled: Bool(true),
-			RequiredStatusChecks: &RequiredStatusChecks{
-				EnforcementLevel: String("everyone"),
-				Contexts:         &[]string{"continous-integration"},
+	mux.HandleFunc("/repos/o/r/branches/b/protection", func(w http.ResponseWriter, r *http.Request) {
+		v := new(ProtectionRequest)
+		json.NewDecoder(r.Body).Decode(v)
+
+		testMethod(t, r, "GET")
+		testHeader(t, r, "Accept", mediaTypeProtectedBranchesPreview)
+		fmt.Fprintf(w, `{"required_status_checks":{"include_admins":true,"strict":true,"contexts":["continuous-integration"]},"required_pull_request_reviews":{"include_admins":true},"restrictions":{"users":[{"id":1,"login":"u"}],"teams":[{"id":2,"slug":"t"}]}}`)
+	})
+
+	protection, _, err := client.Repositories.GetBranchProtection("o", "r", "b")
+	if err != nil {
+		t.Errorf("Repositories.GetBranchProtection returned error: %v", err)
+	}
+
+	want := &Protection{
+		RequiredStatusChecks: &RequiredStatusChecks{
+			IncludeAdmins: true,
+			Strict:        true,
+			Contexts:      []string{"continuous-integration"},
+		},
+		RequiredPullRequestReviews: &RequiredPullRequestReviews{
+			IncludeAdmins: true,
+		},
+		Restrictions: &BranchRestrictions{
+			Users: []*User{
+				{Login: String("u"), ID: Int(1)},
+			},
+			Teams: []*Team{
+				{Slug: String("t"), ID: Int(2)},
 			},
 		},
 	}
+	if !reflect.DeepEqual(protection, want) {
+		t.Errorf("Repositories.GetBranchProtection returned %+v, want %+v", protection, want)
+	}
+}
 
-	mux.HandleFunc("/repos/o/r/branches/b", func(w http.ResponseWriter, r *http.Request) {
-		v := new(Branch)
+func TestRepositoriesService_UpdateBranchProtection(t *testing.T) {
+	setup()
+	defer teardown()
+
+	input := &ProtectionRequest{
+		RequiredStatusChecks: &RequiredStatusChecks{
+			IncludeAdmins: true,
+			Strict:        true,
+			Contexts:      []string{"continuous-integration"},
+		},
+		RequiredPullRequestReviews: &RequiredPullRequestReviews{
+			IncludeAdmins: true,
+		},
+		Restrictions: &BranchRestrictionsRequest{
+			Users: []string{"u"},
+			Teams: []string{"t"},
+		},
+	}
+
+	mux.HandleFunc("/repos/o/r/branches/b/protection", func(w http.ResponseWriter, r *http.Request) {
+		v := new(ProtectionRequest)
 		json.NewDecoder(r.Body).Decode(v)
 
-		testMethod(t, r, "PATCH")
+		testMethod(t, r, "PUT")
 		if !reflect.DeepEqual(v, input) {
 			t.Errorf("Request body = %+v, want %+v", v, input)
 		}
 		testHeader(t, r, "Accept", mediaTypeProtectedBranchesPreview)
-		fmt.Fprint(w, `{"protection": {"enabled": true, "required_status_checks": {"enforcement_level": "everyone", "contexts": ["continous-integration"]}}}`)
+		fmt.Fprintf(w, `{"required_status_checks":{"include_admins":true,"strict":true,"contexts":["continuous-integration"]},"required_pull_request_reviews":{"include_admins":true},"restrictions":{"users":[{"id":1,"login":"u"}],"teams":[{"id":2,"slug":"t"}]}}`)
 	})
 
-	branch, _, err := client.Repositories.EditBranch("o", "r", "b", input)
+	protection, _, err := client.Repositories.UpdateBranchProtection("o", "r", "b", input)
 	if err != nil {
-		t.Errorf("Repositories.EditBranch returned error: %v", err)
+		t.Errorf("Repositories.UpdateBranchProtection returned error: %v", err)
 	}
 
-	if !reflect.DeepEqual(branch, input) {
-		t.Errorf("Repositories.EditBranch returned %+v, want %+v", branch, input)
+	want := &Protection{
+		RequiredStatusChecks: &RequiredStatusChecks{
+			IncludeAdmins: true,
+			Strict:        true,
+			Contexts:      []string{"continuous-integration"},
+		},
+		RequiredPullRequestReviews: &RequiredPullRequestReviews{
+			IncludeAdmins: true,
+		},
+		Restrictions: &BranchRestrictions{
+			Users: []*User{
+				{Login: String("u"), ID: Int(1)},
+			},
+			Teams: []*Team{
+				{Slug: String("t"), ID: Int(2)},
+			},
+		},
+	}
+	if !reflect.DeepEqual(protection, want) {
+		t.Errorf("Repositories.UpdateBranchProtection returned %+v, want %+v", protection, want)
+	}
+}
+
+func TestRepositoriesService_RemoveBranchProtection(t *testing.T) {
+	setup()
+	defer teardown()
+
+	mux.HandleFunc("/repos/o/r/branches/b/protection", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "DELETE")
+		testHeader(t, r, "Accept", mediaTypeProtectedBranchesPreview)
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	_, err := client.Repositories.RemoveBranchProtection("o", "r", "b")
+	if err != nil {
+		t.Errorf("Repositories.RemoveBranchProtection returned error: %v", err)
 	}
 }
 
@@ -517,7 +598,7 @@ func TestRepositoriesService_License(t *testing.T) {
 
 	mux.HandleFunc("/repos/o/r/license", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
-		fmt.Fprint(w, `{"license":{"key":"mit","name":"MIT License","url":"https://api.github.com/licenses/mit","featured":true}}`)
+		fmt.Fprint(w, `{"name": "LICENSE", "path": "LICENSE", "license":{"key":"mit","name":"MIT License","spdx_id":"MIT","url":"https://api.github.com/licenses/mit","featured":true}}`)
 	})
 
 	got, _, err := client.Repositories.License("o", "r")
@@ -525,12 +606,18 @@ func TestRepositoriesService_License(t *testing.T) {
 		t.Errorf("Repositories.License returned error: %v", err)
 	}
 
-	want := &License{
-		Name:     String("MIT License"),
-		Key:      String("mit"),
-		URL:      String("https://api.github.com/licenses/mit"),
-		Featured: Bool(true),
+	want := &RepositoryLicense{
+		Name: String("LICENSE"),
+		Path: String("LICENSE"),
+		License: &License{
+			Name:     String("MIT License"),
+			Key:      String("mit"),
+			SPDXID:   String("MIT"),
+			URL:      String("https://api.github.com/licenses/mit"),
+			Featured: Bool(true),
+		},
 	}
+
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Repositories.License returned %+v, want %+v", got, want)
 	}

@@ -75,7 +75,7 @@ func TestActivityService_ListIssueEventsForRepository(t *testing.T) {
 		testFormValues(t, r, values{
 			"page": "2",
 		})
-		fmt.Fprint(w, `[{"id":"1"},{"id":"2"}]`)
+		fmt.Fprint(w, `[{"id":1},{"id":2}]`)
 	})
 
 	opt := &ListOptions{Page: 2}
@@ -84,7 +84,7 @@ func TestActivityService_ListIssueEventsForRepository(t *testing.T) {
 		t.Errorf("Activities.ListIssueEventsForRepository returned error: %v", err)
 	}
 
-	want := []*Event{{ID: String("1")}, {ID: String("2")}}
+	want := []*IssueEvent{{ID: Int(1)}, {ID: Int(2)}}
 	if !reflect.DeepEqual(events, want) {
 		t.Errorf("Activities.ListIssueEventsForRepository returned %+v, want %+v", events, want)
 	}
@@ -275,7 +275,7 @@ func TestActivityService_ListUserEventsForOrganization(t *testing.T) {
 	}
 }
 
-func TestActivity_EventPayload_typed(t *testing.T) {
+func TestActivityService_EventPayload_typed(t *testing.T) {
 	raw := []byte(`{"type": "PushEvent","payload":{"push_id": 1}}`)
 	var event *Event
 	if err := json.Unmarshal(raw, &event); err != nil {
@@ -291,7 +291,7 @@ func TestActivity_EventPayload_typed(t *testing.T) {
 // TestEvent_Payload_untyped checks that unrecognized events are parsed to an
 // interface{} value (instead of being discarded or throwing an error), for
 // forward compatibility with new event types.
-func TestActivity_EventPayload_untyped(t *testing.T) {
+func TestActivityService_EventPayload_untyped(t *testing.T) {
 	raw := []byte(`{"type": "UnrecognizedEvent","payload":{"field": "val"}}`)
 	var event *Event
 	if err := json.Unmarshal(raw, &event); err != nil {
@@ -299,6 +299,19 @@ func TestActivity_EventPayload_untyped(t *testing.T) {
 	}
 
 	want := map[string]interface{}{"field": "val"}
+	if !reflect.DeepEqual(event.Payload(), want) {
+		t.Errorf("Event Payload returned %+v, want %+v", event.Payload(), want)
+	}
+}
+
+func TestActivityService_EventPayload_installation(t *testing.T) {
+	raw := []byte(`{"type": "PullRequestEvent","payload":{"installation":{"id":1}}}`)
+	var event *Event
+	if err := json.Unmarshal(raw, &event); err != nil {
+		t.Fatalf("Unmarshal Event returned error: %v", err)
+	}
+
+	want := &PullRequestEvent{Installation: &Installation{ID: Int(1)}}
 	if !reflect.DeepEqual(event.Payload(), want) {
 		t.Errorf("Event Payload returned %+v, want %+v", event.Payload(), want)
 	}

@@ -25,6 +25,7 @@ func TestPouleUpdater(t *testing.T) {
 	// Create test pull request and related issue object.
 	item := test.NewPullRequestBuilder(test.IssueNumber).
 		Merged(true).
+		State("closed").
 		HeadBranch(ctx.Username, ctx.Repository, "head", test.CommitSHA[0]).
 		BaseBranch(ctx.Username, ctx.Repository, "master", test.CommitSHA[1]).Item()
 
@@ -37,9 +38,11 @@ func TestPouleUpdater(t *testing.T) {
 	commitFiles := []*github.CommitFile{
 		{
 			Filename: github.String("Dockerfile"),
+			RawURL:   github.String(""),
 		},
 		{
 			Filename: github.String(configuration.PouleConfigurationFile),
+			RawURL:   github.String(""),
 		},
 	}
 	clt.MockPullRequests.
