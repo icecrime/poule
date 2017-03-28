@@ -24,6 +24,7 @@ func OperationFromConfig(operationConfig *configuration.OperationConfiguration) 
 // OperationValidator validates an operation configuration.
 type OperationValidator struct{}
 
+// Validate verifies the validity of the configuration object.
 func (o OperationValidator) Validate(operationConfig *configuration.OperationConfiguration) error {
 	_, err := OperationFromConfig(operationConfig)
 	return err
