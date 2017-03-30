@@ -5,25 +5,31 @@ Poule
 
 # Description
 
-:chicken: Poule is a tool that helps automating tasks on GitHub issues and pull requests. The intent
-is to implement snippets of behavior, called **operations**, once and be able to invoke it from
-three different contexts:
+:chicken: Poule is a tool that helps automating tasks on GitHub issues and pull requests. It allows
+implementing snippets of behavior, called **operations**, once and be able to invoke them in three
+different contexts:
 
   1. As a one-time operation, on the entire stock of GitHub items.
   2. As part of a batch job alongside multiple other operations.
-  3. As part of a long-running daemon, triggered by GitHub webhooks.
+  3. As part of a long-running daemon, either triggered by GitHub webhooks or scheduled.
 
-### 1. One-time operations
+The project was created to manage automation on the [Docker project](https://github.com/docker/docker).
 
-Example:
+# Usage
+
+## 1. One-time operations
+
+The following command runs the `dco-check` operation every pull requests in the `docker/docker`
+repository without applying any modifications (`dry-run=true`):
 
 ```bash
 $> poule --repository docker/docker --token-file ~/.gitthub-token --dry-run=true dco-check --filter is:pr
 ```
 
-### 2. Batch job
+## 2. Batch job
 
-Example:
+The following configuration file describes a `dco-check` operation to run on the `docker/docker`
+repository, and can be executed with the `poule batch` command:
 
 ```bash
 $> cat dco-check.yml
@@ -34,12 +40,14 @@ operations:
       filters: {
           is: "pr"
       }
+
+$> poule --token-file ~/.github-token --dry-run=true batch dco-check.yml
 ```
 
-### 3. Long running job
+## 3. Long running job
 
-Poule can connect to NSQ to receive events for Github issues and pull requests.  It will then use
-this event data to perform the actions listed in a config file.
+Poule can either listen on HTTP for GitHub webhooks or use [NSQ](https://nsq.io) as the source of
+events. In this mode, actions will be performed as configured as they are received.
 
 See
 [`config/serve.example.yml`](https://github.com/icecrime/poule/blob/master/config/serve.example.yml)
