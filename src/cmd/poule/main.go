@@ -20,7 +20,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "poule"
 	app.Usage = "Mass interact with GitHub issues & pull requests"
-	app.Version = "0.3.0"
+	app.Version = "0.4.0"
 	app.Before = func(c *cli.Context) error {
 		if c.GlobalBool("debug") {
 			logrus.SetLevel(logrus.DebugLevel)
