@@ -8,28 +8,13 @@ import (
 	"poule/gh"
 
 	"github.com/Sirupsen/logrus"
-	nsq "github.com/bitly/go-nsq"
 	"github.com/google/go-github/github"
 )
 
-type partialMessage struct {
-	GitHubEvent    string `json:"X-GitHub-Event"`
-	GitHubDelivery string `json:"X-GitHub-Delivery"`
-	HubSignature   string `json:"X-Hub-Signature"`
-	Action         string `json:"action"`
-}
-
-// HandleMessage handles an NSQ message.
-func (s *Server) HandleMessage(message *nsq.Message) error {
-	// Unserialize the GitHub webhook payload into a partial message in order to inspect the type
-	// of event and handle accordingly.
-	var m partialMessage
-	if err := json.Unmarshal(message.Body, &m); err != nil {
-		return err
-	}
-
+// HandleMessage handles a GitHub event.
+func (s *Server) HandleMessage(event string, body []byte) error {
 	// Parse into GitHub items in order to extract the repository information.
-	items, err := makeGitHubItems(&s.config.Config, m.GitHubEvent, message.Body)
+	items, err := makeGitHubItems(&s.config.Config, event, body)
 	switch {
 	case err != nil:
 		return err
@@ -39,17 +24,25 @@ func (s *Server) HandleMessage(message *nsq.Message) error {
 
 	// Handle the event for every GitHub item related to this event.
 	for _, item := range items {
-		if err := s.handleMessageForItem(m, item); err != nil {
+		if err := s.handleMessageForItem(event, body, item); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *Server) handleMessageForItem(m partialMessage, item gh.Item) error {
+func (s *Server) handleMessageForItem(event string, body []byte, item gh.Item) error {
+	// Unserialize the body in order to extract the action.
+	var m struct {
+		Action string `json:"action"`
+	}
+	if err := json.Unmarshal(body, &m); err != nil {
+		return err
+	}
+
 	logrus.WithFields(logrus.Fields{
 		"action":     m.Action,
-		"event":      m.GitHubEvent,
+		"event":      event,
 		"number":     item.Number(),
 		"repository": item.Repository(),
 	}).Debugf("received GitHub event")
@@ -64,7 +57,7 @@ func (s *Server) handleMessageForItem(m partialMessage, item gh.Item) error {
 	// keys are GitHub event types, and values are associated actions.
 outer_loop:
 	for _, actionConfig := range actions {
-		if actionConfig.Triggers.Contains(m.GitHubEvent, m.Action) {
+		if actionConfig.Triggers.Contains(event, m.Action) {
 			if err := executeAction(s.makeExecutionConfig(item.Repository()), actionConfig, item); err != nil {
 				return err
 			}

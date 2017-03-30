@@ -3,6 +3,8 @@ package configuration
 // Server is the configuration object for the server mode.
 type Server struct {
 	Config      `yaml:",inline"`
+	HTTPListen  string `yaml:"http_listen"`
+	HTTPSecret  string `yaml:"http_secret"`
 	LookupdAddr string `yaml:"nsq_lookupd"`
 	Channel     string `yaml:"nsq_channel"`
 

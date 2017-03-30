@@ -1,28 +1,41 @@
-delay:      30s
+# In `dry_run` the operations will not be applied. 
 dry_run:    True
 
-nsq_channel: "poule-dev"
-nsq_lookupd: "127.0.0.1:4161"
-nsq_topics:  [ "hooks-docker" ]
+# Use HTTP webhooks to retrieve GitHub events. In this mode, poule will listen on HTTP on the
+# specified listen address. The GitHub repository must then be configured in such way that the
+# webhook's "Payload URL" maps to the poule process. Configuring a secret is highly recommended in
+# this mode.
+http_listen: ":8080"
+http_secret: "S3CR3T"
 
-configuration:
+# Use NSQ (http://nsq.io) to retrieve GitHub events. In this mode, poule will subscribe to a
+# specific NSQ channel and monitor one queue per repository.
+# There are several advantages to using NSQ over plain webhooks: message persistency, message fan
+# out (if you happen to have multiple tools handling GitHub events). 
+#nsq_channel: "poule-dev"
+#nsq_lookupd: "127.0.0.1:4161"
 
-    #
-    # Common triggers for all repositories.
-    #
-    - repositories: [
-        "docker/docker",
-        "docker/libnetwork",
-        "docker/swarmkit",
-      ]
-      triggers:
+# Repositories is the collection of monitored repositories. The key corresponds to the repository
+# short name (e.g., `docker/containerd`), and the value to the corresponding NSQ queue. When poule
+# is used in HTTP mode, the value is unused and can be left empty.
+repositories:
+    docker/containerd:  "hooks-containerd"
+    docker/docker:      "hooks-docker"
+
+#
+# Common triggers for all repositories.
+#
+common_configuration:
+
+    - triggers:
         pull_request:   [ opened, reopened, synchronized ]
       operations:
         - type:         dco-check
 
-    #
-    # Docker Engine (docker/docker) specific triggers.
-    #
+#
+# Repository-specific triggers.
+#
+configuration:
     - repositories: [
         "docker/docker",
       ]
