@@ -6,14 +6,14 @@ Poule
 # Description
 
 :chicken: Poule is a tool that helps automating tasks on GitHub issues and pull requests. It allows
-implementing snippets of behavior, called **operations**, once and be able to invoke them in three
+implementing snippets of behavior (called [**operations**](#operations)) once and be able to invoke them in three
 different contexts:
 
   1. As a one-time operation, on the entire stock of GitHub items.
   2. As part of a batch job alongside multiple other operations.
   3. As part of a long-running daemon, either triggered by GitHub webhooks or scheduled.
 
-The project was created to manage automation on the [Docker project](https://github.com/docker/docker).
+The project was created to manage automation on the [Docker project](https://github.com/docker/docker/blob/master/poule.yml).
 
 # Usage
 
@@ -47,7 +47,7 @@ $> poule --token-file ~/.github-token --dry-run=true batch dco-check.yml
 ## 3. Long running job
 
 Poule can either listen on HTTP for GitHub webhooks or use [NSQ](https://nsq.io) as the source of
-events. In this mode, actions will be performed as configured as they are received.
+events. In this mode, actions will be performed based on the configuration as they are received.
 
 See
 [`config/serve.example.yml`](https://github.com/icecrime/poule/blob/master/config/serve.example.yml)
