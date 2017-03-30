@@ -51,7 +51,8 @@ events. In this mode, actions will be performed based on the configuration as th
 
 See
 [`config/serve.example.yml`](https://github.com/icecrime/poule/blob/master/config/serve.example.yml)
-for an example configuration.
+for an example configuration. In this mode, each repository can optionally configure its own set of
+rules by adding a `poule.yml` file at the root of the source tree.
 
 # Operations
 

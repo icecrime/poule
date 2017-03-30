@@ -22,20 +22,23 @@ repositories:
     docker/containerd:  "hooks-containerd"
     docker/docker:      "hooks-docker"
 
-#
 # Common triggers for all repositories.
-#
 common_configuration:
 
+    # Apply the `dco-check` operation whenever a pull request is either opened, reopened, or
+    # synchronized. The keys in a trigger must correspond to a valid GitHub event type, and the
+    # value is a collection of valid GitHub actions.
     - triggers:
         pull_request:   [ opened, reopened, synchronized ]
       operations:
         - type:         dco-check
 
-#
-# Repository-specific triggers.
-#
+# Repository-specific triggers. Optionally, these configurations can be stored in a `poule.yml` at
+# root of the repositories themselves. This greatly simplifies the management of a collection of
+# heterogeneous projects, as different group of maintainers are free to chose the most appropriate
+# set of rules for their particular project.
 configuration:
+
     - repositories: [
         "docker/docker",
       ]
