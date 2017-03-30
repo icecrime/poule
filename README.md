@@ -47,7 +47,7 @@ $> poule --token-file ~/.github-token --dry-run=true batch dco-check.yml
 ## 3. Long running job
 
 Poule can either listen on HTTP for GitHub webhooks or use [NSQ](https://nsq.io) as the source of
-events. In this mode, actions will be performed based on the configuration as they are received.
+events. In this mode, actions will be performed based on the configuration as events are received.
 
 See
 [`config/serve.example.yml`](https://github.com/icecrime/poule/blob/master/config/serve.example.yml)
