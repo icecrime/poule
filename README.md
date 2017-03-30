@@ -23,7 +23,7 @@ The following command runs the `dco-check` operation every pull requests in the 
 repository without applying any modifications (`dry-run=true`):
 
 ```bash
-$> poule --repository docker/docker --token-file ~/.gitthub-token --dry-run=true dco-check --filter is:pr
+$> poule --repository docker/docker --token-file ~/.github-token --dry-run=true dco-check --filter is:pr
 ```
 
 ## 2. Batch job
