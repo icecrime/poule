@@ -38,6 +38,8 @@ Builtin operations
 | ``version-milestone`` | ~               |        | ☑              | Add merged pull requests to the upcoming milestone.                   |
 +-----------------------+-----------------+--------+----------------+-----------------------------------------------------------------------+
 
+More details on each operation can be found on `GitHub <https://github.com/icecrime/poule/blob/master/src/poule/operations/catalog/README.md>`_.
+
 Creating custom operations
 --------------------------
 
