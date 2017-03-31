@@ -1,4 +1,5 @@
 bin/
 pkg/
+docs/_build/
 /poule
 .DS_Store
