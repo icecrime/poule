@@ -19,8 +19,8 @@ http_secret: "S3CR3T"
 # short name (e.g., `docker/containerd`), and the value to the corresponding NSQ queue. When poule
 # is used in HTTP mode, the value is unused and can be left empty.
 repositories:
-    docker/containerd:  "hooks-containerd"
-    docker/docker:      "hooks-docker"
+    containerd/containerd:  "hooks-containerd"
+    moby/moby:      "hooks-docker"
 
 # Common triggers for all repositories.
 common_configuration:
@@ -40,7 +40,7 @@ common_configuration:
 configuration:
 
     - repositories: [
-        "docker/docker",
+        "moby/moby",
       ]
       triggers:
         issues:         [ edited, opened, reopened ]

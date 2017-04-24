@@ -17,7 +17,7 @@ import (
 const (
 	dcoContext           = "dco-signed"
 	dcoCommentToken      = "AUTOMATED:POULE:DCO-EXPLANATION"
-	dcoURL               = "https://github.com/docker/docker/blob/master/CONTRIBUTING.md#sign-your-work"
+	dcoURL               = "https://github.com/moby/moby/blob/master/CONTRIBUTING.md#sign-your-work"
 	defaultUnsignedLabel = "dco/no"
 )
 
@@ -175,7 +175,7 @@ func (o *dcoCheckOperation) PullRequestListOptions(c *operations.Context) *githu
 func formatDCOComment(c *operations.Context, pr *github.PullRequest) string {
 	comment := fmt.Sprintf("<!-- %s -->\n", dcoCommentToken)
 	comment += `Please sign your commits following these rules:
-https://github.com/docker/docker/blob/master/CONTRIBUTING.md#sign-your-work
+https://github.com/moby/moby/blob/master/CONTRIBUTING.md#sign-your-work
 The easiest way to do this is to amend the last commit:
 ~~~console
 `
