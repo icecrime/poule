@@ -2,7 +2,7 @@
 # tool when invoking the `batch` command.
 delay:      30s
 dry_run:    True
-repository: docker/docker
+repository: moby/moby
 
 # A list of operations to run as part of the batch job.
 operations:

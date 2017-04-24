@@ -14,7 +14,7 @@ import (
 )
 
 // DockerVersionURL is the URL for the Docker VERSION file.
-const DockerVersionURL = "https://raw.githubusercontent.com/docker/docker/master/VERSION"
+const DockerVersionURL = "https://raw.githubusercontent.com/moby/moby/master/VERSION"
 
 func init() {
 	registerOperation(&versionMilestoneDescriptor{})

@@ -13,7 +13,7 @@ different contexts:
   2. As part of a batch job alongside multiple other operations.
   3. As part of a long-running daemon, either triggered by GitHub webhooks or scheduled.
 
-The project was created to manage automation on the [Docker project](https://github.com/docker/docker/blob/master/poule.yml).
+The project was created to manage automation on the [Moby project](https://github.com/moby/moby/blob/master/poule.yml).
 
 # Documentation
 
