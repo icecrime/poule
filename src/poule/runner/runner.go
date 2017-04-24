@@ -144,7 +144,7 @@ func runSingle(c *configuration.Config, op operations.Operation, item gh.Item, f
 	context.Username, context.Repository = c.SplitRepository()
 
 	// Apply global filters to the item.
-	if !filters.Apply(item) {
+	if !filters.Apply(context, item) {
 		return nil
 	}
 
