@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"poule/configuration"
 	"poule/gh"
 	"poule/operations"
 	"poule/test"
@@ -125,28 +124,6 @@ func TestRebuildAllConfigurations(t *testing.T) {
 	}
 	if err := operation.Apply(ctx, item, userData); err != nil {
 		t.Fatalf("Apply returned unexpected error %v", err)
-	}
-	test.AssertExpectations(clt, t)
-}
-
-func TestRebuildSkipFailing(t *testing.T) {
-	clt, ctx := makeContext()
-	commitSHA := "baddcafe"
-	operation, _ := makeRebuildOperation([]string{"test"}, []string{}, "")
-
-	// Create test pull request and related issue object.
-	issue := test.NewIssueBuilder(test.IssueNumber).Labels([]string{configuration.FailingCILabel}).Value
-	pullr := test.NewPullRequestBuilder(test.IssueNumber).
-		HeadBranch(ctx.Username, ctx.Repository, "head", commitSHA).
-		BaseBranch(ctx.Username, ctx.Repository, "base", test.CommitSHA[0]).Value
-	clt.MockIssues.On("Get", ctx.Username, ctx.Repository, test.IssueNumber).Return(issue, nil, nil)
-
-	// Call into the operation.
-	item := gh.MakePullRequestItem(pullr)
-	if res, _, err := operation.Filter(ctx, item); err != nil {
-		t.Fatalf("Filter returned unexpected error %v", err)
-	} else if res != operations.Reject {
-		t.Fatalf("Filter should reject issue with label %q", test.IssueNumber)
 	}
 	test.AssertExpectations(clt, t)
 }
