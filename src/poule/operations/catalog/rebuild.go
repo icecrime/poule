@@ -121,12 +121,6 @@ func (o *prRebuildOperation) Filter(c *operations.Context, item gh.Item) (operat
 		return operations.Reject, nil, errors.Wrapf(err, "failed to retrieve issue #%d", *pr.Number)
 	}
 
-	// Skip all pull requests which are known to fail CI.
-	if gh.HasFailingCILabel(item.Issue.Labels) {
-		logrus.Debugf("rejecting pull request with label %q", configuration.FailingCILabel)
-		return operations.Reject, nil, nil
-	}
-
 	// Search for our trigger label, if specified.
 	if o.Label != "" && !gh.HasLabel(o.Label, item.Issue.Labels) {
 		logrus.Debugf("rejecting pull request without label %q", o.Label)
