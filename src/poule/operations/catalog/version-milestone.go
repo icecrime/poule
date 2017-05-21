@@ -13,9 +13,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-// DockerVersionURL is the URL for the Docker VERSION file.
-const DockerVersionURL = "https://raw.githubusercontent.com/moby/moby/master/VERSION"
-
 func init() {
 	registerOperation(&versionMilestoneDescriptor{})
 }
@@ -119,9 +116,10 @@ func (o *versionMilestoneOperation) PullRequestListOptions(c *operations.Context
 }
 
 func getVersionFromRepository(repository string) (string, error) {
-	resp, err := http.Get(fmt.Sprintf("https://raw.githubusercontent.com/%s/master/VERSION", repository))
+	versionURL := fmt.Sprintf("https://raw.githubusercontent.com/%s/master/VERSION", repository)
+	resp, err := http.Get(versionURL)
 	if err != nil {
-		return "", fmt.Errorf("failed to retrieve version from %q: %v", DockerVersionURL, err)
+		return "", fmt.Errorf("failed to retrieve version from %q: %v", versionURL, err)
 	}
 	defer resp.Body.Close()
 
