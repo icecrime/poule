@@ -6,7 +6,7 @@ Poule
 # Description
 
 :chicken: Poule is a tool that helps automating tasks on GitHub issues and pull requests. It allows
-implementing snippets of behavior (called [**operations**](#operations)) once and be able to invoke them in three
+implementing snippets of behavior (called [**operations**](http://poule.readthedocs.io/en/latest/user/operations.html)) once and be able to invoke them in three
 different contexts:
 
   1. As a one-time operation, on the entire stock of GitHub items.
