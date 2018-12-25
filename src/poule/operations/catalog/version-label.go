@@ -75,7 +75,7 @@ func extractVersionLabels(issue *github.Issue) (bool, string) {
 	if issue.Body == nil {
 		return false, ""
 	}
-	serverVersion := regexp.MustCompile(`Server:\s+Version:\s+(\d+\.\d+\.\d+)(-\w+)?`)
+	serverVersion := regexp.MustCompile(`(?:Server:?)\s+(?:Docker Engine - Community\s+)?(?:Engine:\s+)?(?:Version:\s+)(\d+\.\d+\.\d+)(-\w+)?`)
 	versionSubmatch := serverVersion.FindStringSubmatch(*issue.Body)
 	if len(versionSubmatch) < 3 {
 		return false, ""
