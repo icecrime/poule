@@ -1,0 +1,21 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.11
+    working_directory: /go/src/github.com/icecrime/poule
+
+    steps:
+      - checkout
+
+      - run:
+          name: Prepare
+          command: go get github.com/constabulary/gb/...
+
+      - run:
+          name: Build
+          command: make
+
+      - run:
+          name: Run unit tests
+          command: make test
